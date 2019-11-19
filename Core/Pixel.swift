@@ -23,7 +23,11 @@ import Alamofire
 public enum PixelName: String {
     
     case appLaunch = "ml"
+
+    case forgetAllPressedBrowsing = "mf_bp"
+    case forgetAllPressedTabSwitching = "mf_tp"
     case forgetAllExecuted = "mf"
+    case forgetTabsExecuted = "mf_t"
     
     case privacyDashboardOpened = "mp"
     case privacyDashboardScorecard = "mp_c"
@@ -31,9 +35,18 @@ public enum PixelName: String {
     case privacyDashboardNetworks = "mp_n"
     case privacyDashboardPrivacyPractices = "mp_p"
     case privacyDashboardGlobalStats = "mp_s"
-    case privacyDashboardToggleProtectionOn = "mp_ta"
-    case privacyDashboardToggleProtectionOff = "mp_tb"
-
+    case privacyDashboardWhitelistAdd = "mp_wla"
+    case privacyDashboardWhitelistRemove = "mp_wlr"
+    case privacyDashboardManageWhitelist = "mp_mw"
+    case privacyDashboardReportBrokenSite = "mp_rb"
+    
+    case httpsNoLookup = "m_https_nl"
+    case httpsLocalUpgrade = "m_https_lu"
+    case httpsServiceRequestUpgrade = "m_https_sru"
+    case httpsServiceCacheUpdgrade = "m_https_scu"
+    case httpsServiceRequestNoUpdgrade = "m_https_srn"
+    case httpsServiceCacheNoUpdgrade = "m_https_scn"
+    
     case longPressMenuOpened = "mlp"
     case longPressMenuNewBackgroundTabItem = "mlp_b"
     case longPressMenuNewTabItem = "mlp_t"
@@ -47,15 +60,25 @@ public enum PixelName: String {
     case quickActionExtensionBookmarks = "mqe_b"
     case bookmarksExtensionBookmark = "mbe_b"
     
+    case bookmarkTapped = "m_b_t"
+    case bookmarkRemoved = "m_b_r"
+    case bookmarksEditPressed = "m_b_e"
+    case overlayFavoriteLaunched = "m_ov_f"
+    
     case settingsOpened = "ms"
-    case settingsThemeToggledLight = "ms_tl"
-    case settingsThemeToggledDark = "ms_td"
+    case settingsHomeRowInstructionsRequested = "ms_hr"
+    
+    case settingsThemeShown = "ms_tp"
+    case settingsThemeChangedSystemDefault = "ms_ts"
+    case settingsThemeChangedLight = "ms_tl"
+    case settingsThemeChangedDark = "ms_td"
 
     case settingsHomePageShown = "ms_hp"
     case settingsHomePageSimple = "ms_hp_s"
     case settingsHomePageCenterSearch = "ms_hp_c"
     case settingsHomePageCenterSearchAndFavorites = "ms_hp_f"
-
+    case settingsManageWhitelist = "ms_mw"
+    
     case autoClearSettingsShown = "mac_s"
     case autoClearActionOptionNone = "macwhat_n"
     case autoClearActionOptionTabs = "macwhat_t"
@@ -73,21 +96,19 @@ public enum PixelName: String {
     case browsingMenuAddToFavorites = "mb_af"
     case browsingMenuToggleBrowsingMode = "mb_dm"
     case browsingMenuShare = "mb_sh"
-    case browsingMenuWhitelist = "mb_wl"
-    case browsingMenuReportBrokenSite = "mb_rb"
     case browsingMenuSettings = "mb_st"
     case browsingMenuFindInPage = "mb_fp"
-
+    case browsingMenuWhitelistAdd = "mb_wla"
+    case browsingMenuWhitelistRemove = "mb_wlr"
+    case browsingMenuReportBrokenSite = "mb_rb"
+    
     case tabBarBackPressed = "mt_bk"
     case tabBarForwardPressed = "mt_fw"
     case tabBarBookmarksPressed = "mt_bm"
+    case tabBarBookmarksLongPressed = "mt_bl"
     case tabBarTabSwitcherPressed = "mt_tb"
 
     case onboardingShown = "m_o"
-    case onboardingThemesFinished = "m_o_t"
-    case onboardingThemesDarkThemeSelected = "m_o_t_d"
-    case onboardingThemesLightThemeSelected = "m_o_t_l"
-    case onboardingThemesSkipped = "m_o_t_s"
     case onboardingSummaryFinished = "m_o_s"
     
     case homeScreenShown = "mh"
@@ -99,6 +120,14 @@ public enum PixelName: String {
     case homeScreenEditFavorite = "mh_ef"
     case homeScreenDeleteFavorite = "mh_df"
     case homeScreenPrivacyStatsTapped = "mh_ps"
+    
+    case homeRowCTAShowMeTapped = "m_ha"
+    case homeRowCTANoThanksTapped = "m_hb"
+    
+    case homeRowCTAReminderTapped = "m_hc"
+    case homeRowCTAReminderDismissed = "m_hd"
+    
+    case homeRowInstructionsReplayed = "m_hv"
     
     case feedbackPositive = "mfbs_positive_submit"
     case feedbackNegativePrefix = "mfbs_negative_"
@@ -136,15 +165,29 @@ public enum PixelName: String {
     
     case notificationOptIn = "m_ne"
     case notificationOptOut = "m_nd"
-    case privacyNotificationFired = "m_nfi"
-    case homeRowNotificationFired = "m_nfii"
-    case privacyNotificationOpened = "m_noi"
-    case homeRowNotificationOpened = "m_noii"
     
     case etagStoreOOSWithDisconnectMeFix = "m_d_dcf_oos"
     case etagStoreOOSWithEasylistFix = "m_d_elf_oos"
     
+    case dbMigrationError = "m_d_dbme"
+    case dbRemovalError = "m_d_dbre"
+    case dbDestroyError = "m_d_dbde"
+    case dbInitializationError = "m_d_dbie"
+    case dbSaveWhitelistError = "m_d_dbsw"
+    case dbSaveBloomFilterError = "m_d_dbsb"
+    
     case configurationFetchInfo = "m_d_cfgfetch"
+    case brokenSiteReported = "m_bsr"
+}
+
+public struct PixelParameters {
+    public static let url = "url"
+    public static let duration = "dur"
+    static let test = "test"
+}
+
+public struct PixelValues {
+    static let test = "1"
 }
 
 public class Pixel {
@@ -167,7 +210,7 @@ public class Pixel {
         
         var newParams = params
         if isDebugBuild {
-            newParams["test"] = "1"
+            newParams[PixelParameters.test] = PixelValues.test
         }
         
         let formFactor = deviceType == .pad ? Constants.tablet : Constants.phone
@@ -183,6 +226,17 @@ public class Pixel {
     
 }
 
+extension Pixel {
+    
+    public static func fire(pixel: PixelName, error: Error) {
+        let nsError = error as NSError
+        
+        let params: [String: String?] = ["e": "\(nsError.code)", "d": nsError.domain]
+        
+        fire(pixel: pixel, withAdditionalParameters: params)
+    }
+}
+
 public class TimedPixel {
     
     let pixel: PixelName
@@ -195,7 +249,7 @@ public class TimedPixel {
     
     public func fire(_ fireDate: Date = Date()) {
         let duration = String(fireDate.timeIntervalSince(date))
-        Pixel.fire(pixel: pixel, withAdditionalParameters: ["dur": duration])
+        Pixel.fire(pixel: pixel, withAdditionalParameters: [PixelParameters.duration: duration])
     }
     
 }

@@ -23,15 +23,21 @@ import Core
 class WhitelistViewController: UITableViewController {
     
     @IBOutlet var infoText: UILabel!
-
+    @IBOutlet var backButton: UIButton!
+    
     let whitelistManager = WhitelistManager()
+    var showBackButton = false
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         applyTheme(ThemeManager.shared.currentTheme)
+        configureBackButton()
     }
-
+    
+    private func configureBackButton() {
+        backButton.isHidden = !showBackButton
+    }
+    
     // MARK: UITableView data source
 
     override func numberOfSections(in tableView: UITableView) -> Int {
@@ -73,6 +79,7 @@ class WhitelistViewController: UITableViewController {
         let cancel = UserText.actionCancel
 
         let addSiteBox = UIAlertController(title: title, message: "", preferredStyle: .alert)
+        addSiteBox.overrideUserInterfaceStyle()
         addSiteBox.addTextField { (textField) in
             textField.placeholder = placeholder
             textField.keyboardAppearance = ThemeManager.shared.currentTheme.keyboardAppearance
@@ -81,6 +88,10 @@ class WhitelistViewController: UITableViewController {
         addSiteBox.addAction(UIAlertAction.init(title: cancel, style: .cancel, handler: nil))
         present(addSiteBox, animated: true, completion: nil)
 
+    }
+    
+    @IBAction func onBackPressed() {
+        navigationController?.popViewController(animated: true)
     }
 
     // MARK: private

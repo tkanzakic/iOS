@@ -18,6 +18,7 @@
 //
 
 import UIKit
+import Core
 
 class AddToHomeRowCTAViewController: UIViewController {
 
@@ -42,6 +43,7 @@ class AddToHomeRowCTAViewController: UIViewController {
         super.viewDidLoad()
         configureViews()
         configureForFirstAppearance()
+        
         addObservers()
         
         applyTheme(ThemeManager.shared.currentTheme)
@@ -53,10 +55,12 @@ class AddToHomeRowCTAViewController: UIViewController {
     }
     
     @IBAction func showMe() {
+        Pixel.fire(pixel: .homeRowCTAShowMeTapped)
         dismiss()
     }
 
     @IBAction func noThanks() {
+        Pixel.fire(pixel: .homeRowCTANoThanksTapped)
         dismiss()
     }
 

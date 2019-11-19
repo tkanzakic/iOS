@@ -1,2 +1,2 @@
-• We added support for Basic Authentication so you can login to more websites.
-• Bug fixes and other improvements.
+• You can now use the Fire Button to close all tabs without clearing your session data. This is handy when you want to stay logged in!
+• Other minor bug fixes and improvements.

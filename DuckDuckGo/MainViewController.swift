@@ -108,8 +108,6 @@ class MainViewController: UIViewController {
         registerForKeyboardNotifications()
 
         applyTheme(ThemeManager.shared.currentTheme)
-        
-        LocalNotifications.shared.logic.delegate = self
     }
     
     private func registerForKeyboardNotifications() {
@@ -227,6 +225,15 @@ class MainViewController: UIViewController {
         }
 
     }
+    
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        if #available(iOS 13.0, *),
+            traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            ThemeManager.shared.refreshSystemTheme()
+        }
+    }
 
     private func configureTabManager() {
         let tabsModel: TabsModel
@@ -266,6 +273,8 @@ class MainViewController: UIViewController {
 
     fileprivate func attachHomeScreen() {
         findInPageView.isHidden = true
+        chromeManager.detach()
+        
         removeHomeScreen()
 
         let controller = HomeViewController.loadFromStoryboard()
@@ -287,14 +296,19 @@ class MainViewController: UIViewController {
     }
 
     @IBAction func onFirePressed() {
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alert.addAction(forgetAllAction())
-        alert.addAction(UIAlertAction(title: UserText.actionCancel, style: .cancel))
+        Pixel.fire(pixel: .forgetAllPressedBrowsing)
+        
+        let alert = ForgetDataAlert.buildAlert(forgetTabsHandler: { [weak self] in
+            self?.forgetTabsWithAnimation {}
+        }, forgetTabsAndDataHandler: { [weak self] in
+            self?.forgetAllWithAnimation {}
+        })
+        
         present(controller: alert, fromView: toolbar)
     }
     
     func onQuickFirePressed() {
-        forgetAll {}
+        forgetAllWithAnimation {}
         dismiss(animated: true)
     }
 
@@ -369,7 +383,7 @@ class MainViewController: UIViewController {
         currentTab?.chromeDelegate = nil
         addToView(controller: tab)
         tab.progressWorker.progressBar = progressView
-        tab.webView.scrollView.delegate = chromeManager
+        chromeManager.attach(to: tab.webView.scrollView)
         tab.chromeDelegate = self
     }
 
@@ -496,15 +510,7 @@ class MainViewController: UIViewController {
     fileprivate func launchBrowsingMenu() {
         currentTab?.launchBrowsingMenu()
     }
-
-    private func forgetAllAction() -> UIAlertAction {
-        let action = UIAlertAction(title: UserText.actionForgetAll, style: .destructive) { [weak self] _ in
-            self?.forgetAll {}
-        }
-        action.accessibilityLabel = UserText.confirm
-        return action
-    }
-
+    
     fileprivate func launchReportBrokenSite() {
         performSegue(withIdentifier: "ReportBrokenSite", sender: self)
     }
@@ -579,7 +585,10 @@ class MainViewController: UIViewController {
 
         showNotification(title: UserText.homeRowReminderTitle, message: UserText.homeRowReminderMessage) { tapped in
             if tapped {
+                Pixel.fire(pixel: .homeRowCTAReminderTapped)
                 self.launchInstructions()
+            } else {
+                Pixel.fire(pixel: .homeRowCTAReminderDismissed)
             }
 
             self.hideNotification()
@@ -645,31 +654,33 @@ extension MainViewController: BrowserChromeDelegate {
     func setBarsHidden(_ hidden: Bool, animated: Bool) {
         if hidden { hideKeyboard() }
 
-        updateToolbarConstant(hidden)
-        updateNavBarConstant(hidden)
-
-        if animated {
-
-            self.view.layer.removeAllAnimations()
-
-            UIView.animate(withDuration: ChromeAnimationConstants.duration, delay: 0.0, options: .allowUserInteraction, animations: {
-                self.omniBar.alpha = hidden ? 0 : 1
-                self.toolbar.alpha = hidden ? 0 : 1
-
-                self.view.layoutIfNeeded()
-            }, completion: nil)
-
-        } else {
-            setNavigationBarHidden(hidden)
-            toolbar.alpha = hidden ? 0 : 1
+        setBarsVisibility(hidden ? 0 : 1.0, animated: animated)
+    }
+    
+    func setBarsVisibility(_ percent: CGFloat, animated: Bool = false) {
+        if percent < 1 { hideKeyboard() }
+        
+        let updateBlock = {
+            self.updateToolbarConstant(percent)
+            self.updateNavBarConstant(percent)
+            
+            self.view.layoutIfNeeded()
+            
+            self.omniBar.alpha = percent
+            self.toolbar.alpha = percent
         }
-
+        
+        if animated {
+            UIView.animate(withDuration: ChromeAnimationConstants.duration, animations: updateBlock)
+        } else {
+            updateBlock()
+        }
     }
 
     func setNavigationBarHidden(_ hidden: Bool) {
         if hidden { hideKeyboard() }
         
-        updateNavBarConstant(hidden)
+        updateNavBarConstant(hidden ? 0 : 1.0)
         omniBar.alpha = hidden ? 0 : 1
         statusBarBackground.alpha = hidden ? 0 : 1
     }
@@ -681,17 +692,23 @@ extension MainViewController: BrowserChromeDelegate {
     var toolbarHeight: CGFloat {
         return toolbar.frame.size.height
     }
+    
+    var barsMaxHeight: CGFloat {
+        return max(toolbarHeight, omniBar.frame.size.height)
+    }
 
-    private func updateToolbarConstant(_ hidden: Bool) {
+    // 1.0 - full size, 0.0 - hidden
+    private func updateToolbarConstant(_ ratio: CGFloat) {
         var bottomHeight = self.toolbar.frame.size.height
         if #available(iOS 11.0, *) {
             bottomHeight += view.safeAreaInsets.bottom
         }
-        toolbarBottom.constant = hidden ? bottomHeight : 0
+        toolbarBottom.constant = bottomHeight * (1.0 - ratio)
     }
 
-    private func updateNavBarConstant(_ hidden: Bool) {
-        navBarTop.constant = hidden ? -self.customNavigationBar.frame.size.height : 0
+    // 1.0 - full size, 0.0 - hidden
+    private func updateNavBarConstant(_ ratio: CGFloat) {
+        navBarTop.constant = -self.customNavigationBar.frame.size.height * (1.0 - ratio)
     }
 
 }
@@ -894,9 +911,15 @@ extension MainViewController: TabSwitcherDelegate {
         guard let index = tabManager.model.indexOf(tab: tab) else { return }
         remove(tabAt: index)
     }
+    
+    func tabSwitcherDidRequestForgetTabs(tabSwitcher: TabSwitcherViewController) {
+        forgetTabsWithAnimation {
+            tabSwitcher.dismiss(animated: false, completion: nil)
+        }
+    }
 
     func tabSwitcherDidRequestForgetAll(tabSwitcher: TabSwitcherViewController) {
-        forgetAll {
+        forgetAllWithAnimation {
             tabSwitcher.dismiss(animated: false, completion: nil)
         }
     }
@@ -951,6 +974,8 @@ extension MainViewController: GestureToolbarButtonDelegate {
             view.showBottomToast(UserText.webSaveBookmarkNone)
             return
         }
+        
+        Pixel.fire(pixel: .tabBarBookmarksLongPressed)
         currentTab!.promptSaveBookmarkAction()
     }
     
@@ -982,7 +1007,20 @@ extension MainViewController: AutoClearWorker {
         WebCacheManager.clear()
     }
     
-    fileprivate func forgetAll(completion: @escaping () -> Void) {
+    fileprivate func forgetTabsWithAnimation(completion: @escaping () -> Void) {
+        let spid = Instruments.shared.startTimedEvent(.clearingTabs)
+        findInPageView.done()
+        Pixel.fire(pixel: .forgetTabsExecuted)
+        FireAnimation.animate {
+            self.forgetTabs()
+            completion()
+            Instruments.shared.endTimedEvent(for: spid)
+        }
+        let window = UIApplication.shared.keyWindow
+        window?.showBottomToast(UserText.actionForgetTabsDone, duration: 1)
+    }
+    
+    fileprivate func forgetAllWithAnimation(completion: @escaping () -> Void) {
         let spid = Instruments.shared.startTimedEvent(.clearingData)
         findInPageView.done()
         Pixel.fire(pixel: .forgetAllExecuted)
@@ -1034,14 +1072,6 @@ extension MainViewController: HomePageSettingsDelegate {
         attachHomeScreen()
     }
     
-}
-
-extension MainViewController: LocalNotificationsLogicDelegate {
-    
-    func displayHomeHowInstructions(for: LocalNotificationsLogic) {
-        clearNavigationStack()
-        launchInstructions()
-    }
 }
 
 // swiftlint:enable file_length

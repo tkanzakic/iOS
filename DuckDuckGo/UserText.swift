@@ -46,7 +46,9 @@ public struct UserText {
     public static let actionNewTab = NSLocalizedString("action.title.newTab", comment: "New Tab action")
     public static let actionNewTabForUrl = NSLocalizedString("action.title.newTabForUrl", comment: "Open in New Tab action")
     public static let actionNewBackgroundTabForUrl = NSLocalizedString("action.title.newBackgroundTabForUrl", comment: "Open in New Background Tab action")
+    public static let actionForgetTabs = NSLocalizedString("action.title.forgetTabs", comment: "Clear Tabs action")
     public static let actionForgetAll = NSLocalizedString("action.title.forgetAll", comment: "Clear Tabs and Data action")
+    public static let actionForgetTabsDone = NSLocalizedString("action.title.forgetTabsDone", comment: "Tabs Cleared")
     public static let actionForgetAllDone = NSLocalizedString("action.title.forgetAllDone", comment: "Tabs and Data Cleared")
     public static let actionOpen = NSLocalizedString("action.title.open", comment: "Open action")
     public static let actionReadingList = NSLocalizedString("action.title.readingList", comment: "Reading List action")
@@ -187,14 +189,21 @@ public struct UserText {
     public static let keyCommandSelect = NSLocalizedString("keyCommandSelect", comment: "Select")
 
     public static let contextualOnboardingSearchPrivately = NSLocalizedString("contextualOnboardingSearchPrivately", comment: "Searching with DuckDuckGo means your searches are never tracked. Ever.")
-    public static let contextualOnboardingCustomizeLight = NSLocalizedString("contextualOnboardingCustomizeLight", comment: "Want a different look? Try the light theme!")
-    public static let contextualOnboardingCustomizeDark = NSLocalizedString("contextualOnboardingCustomizeDark", comment: "Want a different look? Try the dark theme!")
+    public static let contextualOnboardingCustomizeTheme = NSLocalizedString("contextualOnboardingCustomizeTheme", comment: "Want a different look? Try changing current theme!")
     public static let contextualOnboardingPrivacyGrade = NSLocalizedString("contextualOnboardingPrivacyGrade", comment: "DuckDuckGo enhances your privacy as you browse. Tap the privacy grade icon to learn how.")
     public static let contextualOnboardingFireButton = NSLocalizedString("contextualOnboardingFireButton", comment: "Tap the flame icon to erase your tabs and browsing data, or make it automatic in settings.")
 
     public static let bookmarkAllTabsNotFound = NSLocalizedString("bookmarkAll.tabs.notfound", comment: "No open tabs found to bookmark")
     public static let bookmarkAllTabsSaved = NSLocalizedString("bookmarkAll.tabs.saved", comment: "All open tabs are bookmarked")
     public static let bookmarkAllTabsFailedToSave = NSLocalizedString("bookmarkAll.tabs.failed", comment: "Failed to bookmark %lu out of %lu tabs")
+    
+    public static let themeNameDefault = NSLocalizedString("theme.name.default", comment: "System Default")
+    public static let themeNameLight = NSLocalizedString("theme.name.light", comment: "Light")
+    public static let themeNameDark = NSLocalizedString("theme.name.dark", comment: "Dark")
+    
+    public static let themeAccessoryDefault = NSLocalizedString("theme.acc.default", comment: "Default")
+    public static let themeAccessoryLight = NSLocalizedString("theme.acc.light", comment: "Light")
+    public static let themeAccessoryDark = NSLocalizedString("theme.acc.dark", comment: "Dark")
 
     public static let autoClearAccessoryOn = NSLocalizedString("autoclear.on", comment: "On")
     public static let autoClearAccessoryOff = NSLocalizedString("autoclear.off", comment: "Off")
@@ -212,8 +221,6 @@ public struct UserText {
         let message = NSLocalizedString("number.of.tabs", comment: "%d Private Tabs")
         return message.format(arguments: number)
     }
-
-    public static let confirm = NSLocalizedString("confirm", comment: "Confirm clear tabs and data")
     
     public static func openTab(withTitle title: String, atAddress address: String) -> String {
         let message = NSLocalizedString("tab.open.with.title.and.address", comment: "Open tab with address")

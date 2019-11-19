@@ -131,6 +131,7 @@ class TabSwitcherViewController: UIViewController {
         let alert = UIAlertController(title: UserText.alertBookmarkAllTitle,
                                       message: UserText.alertBookmarkAllMessage,
                                       preferredStyle: .alert)
+        alert.overrideUserInterfaceStyle()
         alert.addAction(UIAlertAction(title: UserText.actionCancel, style: .cancel))
         alert.addAction(title: UserText.actionBookmark, style: .default) {
             let savedState = self.bookmarkAll(self.tabsModel.tabs)
@@ -165,12 +166,19 @@ class TabSwitcherViewController: UIViewController {
     }
 
     @IBAction func onFirePressed() {
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        alert.addAction(UIAlertAction(title: UserText.actionForgetAll, style: .destructive) { [weak self] _ in
+        Pixel.fire(pixel: .forgetAllPressedTabSwitching)
+        
+        let alert = ForgetDataAlert.buildAlert(forgetTabsHandler: { [weak self] in
+            self?.forgetTabs()
+        }, forgetTabsAndDataHandler: { [weak self] in
             self?.forgetAll()
         })
-        alert.addAction(UIAlertAction(title: UserText.actionCancel, style: .cancel))
+        
         present(controller: alert, fromView: toolbar)
+    }
+    
+    private func forgetTabs() {
+        self.delegate.tabSwitcherDidRequestForgetTabs(tabSwitcher: self)
     }
 
     private func forgetAll() {
@@ -186,6 +194,7 @@ extension TabSwitcherViewController: TabViewCellDelegate {
 
     func deleteTab(tab: Tab) {
         delegate.tabSwitcher(self, didRemoveTab: tab)
+        currentSelection = tabsModel.currentIndex
         refreshTitle()
         collectionView.reloadData()
     }

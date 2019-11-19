@@ -27,6 +27,21 @@ class AppUserDefaultsTests: XCTestCase {
     override func setUp() {
         UserDefaults(suiteName: testGroupName)?.removePersistentDomain(forName: testGroupName)
     }
+    
+    func testWhenAllowUniversalLinksIsSetThenItIsPersisted() {
+
+        let appUserDefaults = AppUserDefaults(groupName: testGroupName)
+        appUserDefaults.allowUniversalLinks = false
+        XCTAssertFalse(appUserDefaults.allowUniversalLinks)
+
+    }
+
+    func testWhenSettingsIsNewThenDefaultForAllowUniversalLinksIsTrue() {
+        
+        let appUserDefaults = AppUserDefaults(groupName: testGroupName)
+        XCTAssertTrue(appUserDefaults.allowUniversalLinks)
+
+    }
 
     func testWhenAutocompleteIsSetThenItIsPersisted() {
 
@@ -51,10 +66,10 @@ class AppUserDefaultsTests: XCTestCase {
         
     }
     
-    func testWhenReadingCurrentThemeDefaultThenDarkIsReturned() {
+    func testWhenReadingCurrentThemeDefaultThenSystemDefaultIsReturned() {
         
         let appUserDefaults = AppUserDefaults(groupName: testGroupName)
-        XCTAssertEqual(appUserDefaults.currentThemeName, .dark)
+        XCTAssertEqual(appUserDefaults.currentThemeName, .systemDefault)
         
     }
     

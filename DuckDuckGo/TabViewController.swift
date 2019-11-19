@@ -28,14 +28,12 @@ class TabViewController: UIViewController {
 // swiftlint:enable type_body_length
 
     private struct Constants {
-        static let unsupportedUrlErrorCode = -1002
-        static let urlCouldNotBeLoaded = 101
         static let frameLoadInterruptedErrorCode = 102
-        static let minimumProgress: CGFloat = 0.1
     }
 
     private struct UserAgent {
-        static let desktop = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15"
+        static let desktop = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15 " +
+                             WKWebViewConfiguration.ddgNameForUserAgent
     }
     
     @IBOutlet private(set) weak var error: UIView!
@@ -61,6 +59,7 @@ class TabViewController: UIViewController {
     
     private(set) lazy var appUrls: AppUrls = AppUrls()
     private var storageCache: StorageCache = AppDependencyProvider.shared.storageCache.current
+    private let contentBlockerConfiguration: ContentBlockerConfigurationStore = ContentBlockerConfigurationUserDefaults()
     private var httpsUpgrade = HTTPSUpgrade.shared
 
     private(set) var siteRating: SiteRating?
@@ -74,7 +73,7 @@ class TabViewController: UIViewController {
     private var trackerNetworksDetectedOnPage = Set<String>()
     private var pageHasTrackers = false
     
-    private var tearDownCount = 0
+    private var tearDownExecuted = false
     private var tips: BrowsingTips?
     
     public var url: URL? {
@@ -141,6 +140,7 @@ class TabViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        applyTheme(ThemeManager.shared.currentTheme)
         addContentBlockerConfigurationObserver()
         addStorageCacheProviderObserver()
     }
@@ -172,7 +172,14 @@ class TabViewController: UIViewController {
         instrumentation.willPrepareWebView()
         webView = WKWebView(frame: view.bounds, configuration: configuration)
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        attachLongPressHandler(webView: webView)
+        
+        if #available(iOS 13, *) {
+            webView.allowsLinkPreview = true
+        } else {
+            attachLongPressHandler(webView: webView)
+            webView.allowsLinkPreview = false
+        }
+        
         webView.allowsBackForwardNavigationGestures = true
         
         addObservers()
@@ -215,15 +222,18 @@ class TabViewController: UIViewController {
     
     private func consumeCookiesThenLoadUrl(_ url: URL?) {
         webView.configuration.websiteDataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { _ in
-            WebCacheManager.consumeCookies()
-            if let url = url {
-                self.load(url: url)
+            WebCacheManager.consumeCookies { [weak self] in
+                guard let strongSelf = self else { return }
+                
+                if let url = url {
+                    strongSelf.load(url: url)
+                }
+                
+                if url != nil {
+                    strongSelf.delegate?.tabLoadingStateDidChange(tab: strongSelf)
+                    strongSelf.onWebpageDidStartLoading(httpsForced: false)
+                }
             }
-        }
-        
-        if url != nil {
-            delegate?.tabLoadingStateDidChange(tab: self)
-            onWebpageDidStartLoading(httpsForced: false)
         }
     }
     
@@ -417,7 +427,7 @@ class TabViewController: UIViewController {
     }
 
     private func resetNavigationBar() {
-        chromeDelegate?.setBarsHidden(false, animated: false)
+        chromeDelegate?.setNavigationBarHidden(false)
     }
 
     @IBAction func onBottomOfScreenTapped(_ sender: UITapGestureRecognizer) {
@@ -498,7 +508,7 @@ class TabViewController: UIViewController {
 
     private func shouldOpenExternally(url: URL) -> Bool {
         if SupportedExternalURLScheme.isSupported(url: url) {
-           return true
+            return true
         }
         
         if SupportedExternalURLScheme.isProhibited(url: url) {
@@ -513,6 +523,7 @@ class TabViewController: UIViewController {
             let dontOpen = UserText.customUrlSchemeDontOpen
             
             let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+            alert.overrideUserInterfaceStyle()
             alert.addAction(UIAlertAction(title: dontOpen, style: .cancel))
             alert.addAction(UIAlertAction(title: open, style: .destructive, handler: { _ in
                 self.openExternally(url: url)
@@ -533,10 +544,10 @@ class TabViewController: UIViewController {
     }
     
     public func tearDown() {
-        guard tearDownCount == 0 else {
-            fatalError("tearDown has already happened")
+        guard !tearDownExecuted else {
+            return
         }
-        tearDownCount += 1
+        tearDownExecuted = true
         removeObservers()
         webView.removeFromSuperview()
 
@@ -830,22 +841,37 @@ extension TabViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        let decision = decidePolicyFor(navigationAction: navigationAction)
         
-        if let url = navigationAction.request.url,
-            decision == .allow {
-
-            if appUrls.isDuckDuckGoSearch(url: url) {
-                StatisticsLoader.shared.refreshSearchRetentionAtb()
+        decidePolicyFor(navigationAction: navigationAction) { [weak self] decision in
+            if let url = navigationAction.request.url, decision == .allow {
+                if let isDdg = self?.appUrls.isDuckDuckGoSearch(url: url), isDdg {
+                    StatisticsLoader.shared.refreshSearchRetentionAtb()
+                }
+                self?.findInPage?.done()
             }
-
-            findInPage?.done()
+            decisionHandler(decision)
         }
-
-        decisionHandler(decision)
     }
     
-    private func decidePolicyFor(navigationAction: WKNavigationAction) -> WKNavigationActionPolicy {
+    private func isValid(navigationAction: WKNavigationAction) -> Bool {
+        guard let url = navigationAction.request.url else {
+            return true
+        }
+        
+        if url.scheme == "sms" && navigationAction.navigationType != .linkActivated {
+            return false
+        }
+        
+        if url.absoluteString.hasPrefix("x-apple-data-detectors://") {
+            return false
+        }
+        
+        return true
+    }
+    
+    private func decidePolicyFor(navigationAction: WKNavigationAction, completion: @escaping (WKNavigationActionPolicy) -> Void) {
+        let allowPolicy = determineAllowPolicy()
+        
         let tld = storageCache.tld
         
         if navigationAction.isTargetingMainFrame()
@@ -853,51 +879,89 @@ extension TabViewController: WKNavigationDelegate {
             lastUpgradedURL = nil
         }
         
+        guard isValid(navigationAction: navigationAction) else {
+            completion(.cancel)
+            return
+        }
+
         guard let url = navigationAction.request.url else {
-            return .allow
+            completion(allowPolicy)
+            return
         }
-        
-        guard !url.absoluteString.hasPrefix("x-apple-data-detectors://") else {
-            return .cancel
-        }
-        
+
         guard let documentUrl = navigationAction.request.mainDocumentURL else {
-            return .allow
+            completion(allowPolicy)
+            return
         }
         
         if shouldReissueSearch(for: url) {
             reissueSearchWithStatsParams(for: url)
-            return .cancel
+            completion(.cancel)
+            return
         }
         
-        if !failingUrls.contains(url.host ?? ""),
-            navigationAction.isTargetingMainFrame(),
-            let upgradeUrl = httpsUpgrade.upgrade(url: url),
-            lastUpgradedURL != upgradeUrl {
-            
-            NetworkLeaderboard.shared.incrementHttpsUpgrades()
-            lastUpgradedURL = upgradeUrl
-            self.load(url: upgradeUrl)
+        if isNewTargetBlankRequest(navigationAction: navigationAction) {
+            // don't open a new tab for custom urls but do allow them to be opened (user will be prompted to confirm)
+            if url.isCustomURLScheme() {
+                completion(allowPolicy)
+                return
+            }
+            delegate?.tab(self, didRequestNewTabForUrl: url)
+            completion(.cancel)
+            return
+        }
+        
+        if let domain = url.host, contentBlockerConfiguration.whitelisted(domain: domain) {
+            completion(allowPolicy)
+            return
+        }
 
-            return .cancel
+        httpsUpgrade.isUgradeable(url: url) { [weak self] isUpgradable in
+            
+            if isUpgradable, let upgradedUrl = self?.upgradeUrl(url, navigationAction: navigationAction) {
+                NetworkLeaderboard.shared.incrementHttpsUpgrades()
+                self?.lastUpgradedURL = upgradedUrl
+                self?.load(url: upgradedUrl)
+                completion(.cancel)
+                return
+            }
+            
+            if let shouldLoad = self?.shouldLoad(url: url, forDocument: documentUrl), shouldLoad {
+                completion(allowPolicy)
+                return
+            }
+            
+            completion(.cancel)
+        }
+    }
+    
+    private func isNewTargetBlankRequest(navigationAction: WKNavigationAction) -> Bool {
+        return navigationAction.navigationType == .linkActivated && navigationAction.targetFrame == nil
+    }
+
+    private func determineAllowPolicy() -> WKNavigationActionPolicy {
+        let allowWithoutUniversalLinks = WKNavigationActionPolicy(rawValue: WKNavigationActionPolicy.allow.rawValue + 2) ?? .allow
+        return AppUserDefaults().allowUniversalLinks ? .allow : allowWithoutUniversalLinks
+    }
+    
+    private func upgradeUrl(_ url: URL, navigationAction: WKNavigationAction) -> URL? {
+        guard !failingUrls.contains(url.host ?? ""), navigationAction.isTargetingMainFrame() else { return nil }
+        
+        if let upgradedUrl: URL = url.toHttps(), lastUpgradedURL != upgradedUrl {
+            return upgradedUrl
         }
         
-        if shouldLoad(url: url, forDocument: documentUrl) {
-            return .allow
-        }
-        
-        return .cancel
+        return nil
     }
     
     private func showErrorNow() {
         guard let error = lastError else { return }
         hideProgressIndicator()
-        
-        let code = (error as NSError).code
-        if  ![Constants.unsupportedUrlErrorCode, Constants.urlCouldNotBeLoaded].contains(code) {
+
+        if !((error as NSError).failedUrl?.isCustomURLScheme() ?? false) {
             showError(message: error.localizedDescription)
         }
-        
+
         webpageDidFailToLoad()
         checkForReloadOnError()
     }
@@ -955,7 +1019,19 @@ extension TabViewController: UIGestureRecognizerDelegate {
     }
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherRecognizer: UIGestureRecognizer) -> Bool {
-        return gestureRecognizer == showBarsTapGestureRecogniser || gestureRecognizer == longPressGestureRecognizer
+        guard gestureRecognizer == showBarsTapGestureRecogniser || gestureRecognizer == longPressGestureRecognizer else {
+            return false
+        }
+
+        if gestureRecognizer == showBarsTapGestureRecogniser,
+            otherRecognizer is UITapGestureRecognizer {
+            return true
+        } else if gestureRecognizer == longPressGestureRecognizer,
+            otherRecognizer is UILongPressGestureRecognizer || String(describing: otherRecognizer).contains("action=_highlightLongPressRecognized:") {
+            return true
+        }
+        
+        return false
     }
 
     func requestFindInPage() {
@@ -973,6 +1049,38 @@ extension TabViewController: UIGestureRecognizerDelegate {
             reload(scripts: false)
         }
     }
+    
+    // Prevents rare accidental display of preview previous to iOS 12
+    func webView(_ webView: WKWebView, shouldPreviewElement elementInfo: WKPreviewElementInfo) -> Bool {
+        return false
+    }
+    
+}
+
+extension TabViewController: Themable {
+
+    func decorate(with theme: Theme) {
+        view.backgroundColor = theme.backgroundColor
+        error?.backgroundColor = theme.backgroundColor
+        errorHeader.textColor = theme.barTintColor
+        errorMessage.textColor = theme.barTintColor
+        
+        switch theme.currentImageSet {
+        case .light:
+            errorInfoImage?.image = UIImage(named: "ErrorInfoLight")
+        case .dark:
+            errorInfoImage?.image = UIImage(named: "ErrorInfoDark")
+        }
+    }
+    
+}
+
+extension NSError {
+
+    var failedUrl: URL? {
+        return userInfo[NSURLErrorFailingURLErrorKey] as? URL
+    }
 
 }
+
 // swiftlint:enable file_length

@@ -25,19 +25,20 @@ import Device
 class SettingsViewController: UITableViewController {
 
     @IBOutlet var margins: [NSLayoutConstraint]!
-    @IBOutlet weak var lightThemeToggle: UISwitch!
+    @IBOutlet weak var themeAccessoryText: UILabel!
     @IBOutlet weak var autocompleteToggle: UISwitch!
     @IBOutlet weak var authenticationToggle: UISwitch!
     @IBOutlet weak var homePageAccessoryText: UILabel!
     @IBOutlet weak var autoClearAccessoryText: UILabel!
     @IBOutlet weak var versionText: UILabel!
-    
+    @IBOutlet weak var openUniversalLinksToggle: UISwitch!
+
     @IBOutlet var labels: [UILabel]!
     @IBOutlet var accessoryLabels: [UILabel]!
     
     weak var homePageSettingsDelegate: HomePageSettingsDelegate?
 
-    private lazy var versionProvider: AppVersion = AppVersion()
+    private lazy var versionProvider: AppVersion = AppVersion.shared
     fileprivate lazy var privacyStore = PrivacyUserDefaults()
     fileprivate lazy var appSettings = AppDependencyProvider.shared.appSettings
     fileprivate lazy var variantManager = AppDependencyProvider.shared.variantManager
@@ -49,10 +50,11 @@ class SettingsViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         configureMargins()
-        configureLightThemeToggle()
+        configureThemeCellAccessory()
         configureDisableAutocompleteToggle()
         configureSecurityToggles()
         configureVersionText()
+        configureUniversalLinksToggle()
         
         applyTheme(ThemeManager.shared.currentTheme)
     }
@@ -78,9 +80,24 @@ class SettingsViewController: UITableViewController {
             return
         }
         
+        if segue.destination is ThemeSettingsViewController {
+            Pixel.fire(pixel: .settingsThemeShown)
+            return
+        }
+        
         if let controller = segue.destination as? HomePageSettingsViewController {
             Pixel.fire(pixel: .settingsHomePageShown)
             controller.delegate = homePageSettingsDelegate
+            return
+        }
+        
+        if segue.destination is WhitelistViewController {
+            Pixel.fire(pixel: .settingsManageWhitelist)
+            return
+        }
+        
+        if segue.destination is HomeRowInstructionsViewController {
+            Pixel.fire(pixel: .settingsHomeRowInstructionsRequested)
             return
         }
         
@@ -98,8 +115,15 @@ class SettingsViewController: UITableViewController {
         }
     }
     
-    private func configureLightThemeToggle() {
-        lightThemeToggle.isOn = appSettings.currentThemeName == .light
+    private func configureThemeCellAccessory() {
+        switch appSettings.currentThemeName {
+        case .systemDefault:
+            themeAccessoryText.text = UserText.themeAccessoryDefault
+        case .light:
+            themeAccessoryText.text = UserText.themeAccessoryLight
+        case .dark:
+            themeAccessoryText.text = UserText.themeAccessoryDark
+        }
     }
 
     private func configureDisableAutocompleteToggle() {
@@ -138,6 +162,10 @@ class SettingsViewController: UITableViewController {
     private func configureVersionText() {
         versionText.text = versionProvider.localized
     }
+    
+    private func configureUniversalLinksToggle() {
+        openUniversalLinksToggle.isOn = appSettings.allowUniversalLinks
+    }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
@@ -174,12 +202,6 @@ class SettingsViewController: UITableViewController {
     @IBAction func onAuthenticationToggled(_ sender: UISwitch) {
         privacyStore.authenticationEnabled = sender.isOn
     }
-    
-    @IBAction func onLightThemeToggled(_ sender: UISwitch) {
-        let pixelName = sender.isOn ? PixelName.settingsThemeToggledLight : PixelName.settingsThemeToggledDark
-        Pixel.fire(pixel: pixelName)
-        ThemeManager.shared.enableTheme(with: sender.isOn ? .light : .dark)
-    }
 
     @IBAction func onDonePressed(_ sender: Any) {
         dismiss(animated: true, completion: nil)
@@ -188,11 +210,17 @@ class SettingsViewController: UITableViewController {
     @IBAction func onAutocompleteToggled(_ sender: UISwitch) {
         appSettings.autocomplete = sender.isOn
     }
+    
+    @IBAction func onAllowUniversalLinksToggled(_ sender: UISwitch) {
+        appSettings.allowUniversalLinks = sender.isOn
+    }
 }
 
 extension SettingsViewController: Themable {
     
     func decorate(with theme: Theme) {
+        decorateNavigationBar(with: theme)
+        configureThemeCellAccessory()
         
         for label in labels {
             label.textColor = theme.tableCellTextColor
@@ -204,20 +232,12 @@ extension SettingsViewController: Themable {
         
         versionText.textColor = theme.tableCellTextColor
         
-        lightThemeToggle.onTintColor = theme.buttonTintColor
         autocompleteToggle.onTintColor = theme.buttonTintColor
         authenticationToggle.onTintColor = theme.buttonTintColor
+        openUniversalLinksToggle.onTintColor = theme.buttonTintColor
         
         tableView.backgroundColor = theme.backgroundColor
         tableView.separatorColor = theme.tableCellSeparatorColor
-        
-        if let navigationController = self.navigationController {
-            UIView.transition(with: navigationController.navigationBar,
-                              duration: 0.2,
-                              options: .transitionCrossDissolve, animations: {
-                                self.decorateNavigationBar(with: theme)
-            }, completion: nil)
-        }
         
         UIView.transition(with: view,
                           duration: 0.2,

@@ -21,6 +21,10 @@ import WebKit
 
 extension WKWebViewConfiguration {
 
+    public static var ddgNameForUserAgent: String {
+        return "DuckDuckGo/\(AppVersion.shared.majorVersionNumber)"
+    }
+    
     public static func persistent() -> WKWebViewConfiguration {
         return configuration(persistsData: true)
     }
@@ -28,7 +32,7 @@ extension WKWebViewConfiguration {
     public static func nonPersistent() -> WKWebViewConfiguration {
         return configuration(persistsData: false)
     }
-
+    
     private static func configuration(persistsData: Bool) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         if !persistsData {
@@ -38,12 +42,41 @@ extension WKWebViewConfiguration {
             configuration.dataDetectorTypes = [.link, .phoneNumber]
         }
 
+        if #available(iOS 11, *) {
+            configuration.installHideAtbModals()
+        }
+
+        let defaultNameForUserAgent = configuration.applicationNameForUserAgent ?? ""
+        configuration.applicationNameForUserAgent = "\(defaultNameForUserAgent) \(WKWebViewConfiguration.ddgNameForUserAgent)"
         configuration.allowsAirPlayForMediaPlayback = true
         configuration.allowsInlineMediaPlayback = true
         configuration.allowsPictureInPictureMediaPlayback = true
         configuration.ignoresViewportScaleLimits = true
 
         return configuration
+    }
+
+    @available(iOS 11, *)
+    private func installHideAtbModals() {
+        guard let store = WKContentRuleListStore.default() else { return }
+        let rules = """
+        [
+          {
+            "trigger": {
+              "url-filter": ".*",
+              "if-domain": ["*duckduckgo.com"]
+            },
+            "action": {
+              "type": "css-display-none",
+              "selector": ".ddg-extension-hide"
+            }
+          }
+        ]
+        """
+        store.compileContentRuleList(forIdentifier: "hide-extension-css", encodedContentRuleList: rules) { rulesList, _ in
+            guard let rulesList = rulesList else { return }
+            self.userContentController.add(rulesList)
+        }
     }
 
     public func loadScripts(storageCache: StorageCache, contentBlockingEnabled: Bool) {
@@ -85,7 +118,11 @@ private class Loader {
     }
 
     private func loadDocumentLevelScripts() {
-        load(scripts: [ .document, .findinpage ] )
+        if #available(iOS 13, *) {
+            load(scripts: [ .findinpage ] )
+        } else {
+            load(scripts: [ .document, .findinpage ] )
+        }
     }
 
     private func loadContentBlockingScripts() {
@@ -120,12 +157,11 @@ private class Loader {
     private func loadBlockerData() {
 
         let surrogates = loadSurrogateJson(storageCache.surrogateStore)
-        let blockingEnabled = storageCache.configuration.enabled
         let whitelist = storageCache.configuration.domainWhitelist.toJsonLookupString()
         let disconnectMeStore = storageCache.disconnectMeStore
 
         javascriptLoader.load(script: .blockerData, withReplacements: [
-            "${blocking_enabled}": "\(blockingEnabled)",
+            "${blocking_enabled}": "true",
             "${disconnectmeBanned}": disconnectMeStore.bannedTrackersJson,
             "${disconnectmeAllowed}": disconnectMeStore.allowedTrackersJson,
             "${whitelist}": whitelist,

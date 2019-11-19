@@ -25,6 +25,7 @@ extension TabViewController {
     func buildBrowsingMenu() -> UIAlertController {
         
         let alert = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        alert.overrideUserInterfaceStyle()
         alert.addAction(title: UserText.actionNewTab) { [weak self] in
             self?.onNewTabAction()
         }
@@ -148,7 +149,7 @@ extension TabViewController {
         let operation = whitelisted ? whitelistManager.remove : whitelistManager.add
         
         return UIAlertAction(title: title, style: .default) { _ in
-            Pixel.fire(pixel: .browsingMenuWhitelist)
+            Pixel.fire(pixel: whitelisted ?.browsingMenuWhitelistRemove : .browsingMenuWhitelistAdd)
             operation(domain)
         }
     }
