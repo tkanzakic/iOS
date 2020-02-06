@@ -19,17 +19,6 @@
 
 var duckduckgoMessaging = function() {
 
-	function cache(name, value) {
-		try {
-			webkit.messageHandlers.cacheMessage.postMessage({
-				name: name, 
-				data: value
-			});
-		} catch(error) {
-			// webkit might not be defined
-		}
-	}
-
 	function trackerDetected(data) {
 		try {
 			webkit.messageHandlers.trackerDetectedMessage.postMessage(data);
@@ -37,11 +26,19 @@ var duckduckgoMessaging = function() {
 			// webkit might not be defined
 		}
 	}
+    
+    function possibleLogin(source) {
+        try {
+            webkit.messageHandlers.possibleLogin.postMessage({ "source": source });
+        } catch(error) {
+            // webkit might not be defined
+        }
+    }
 
 	return {
 
-		cache: cache,
-		trackerDetected: trackerDetected
+		trackerDetected: trackerDetected,
+        possibleLogin: possibleLogin
 
 	}
 }()

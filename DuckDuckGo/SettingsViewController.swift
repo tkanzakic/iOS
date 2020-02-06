@@ -26,17 +26,25 @@ class SettingsViewController: UITableViewController {
 
     @IBOutlet var margins: [NSLayoutConstraint]!
     @IBOutlet weak var themeAccessoryText: UILabel!
+    @IBOutlet weak var appIconCell: UITableViewCell!
+    @IBOutlet weak var appIconImageView: UIImageView!
     @IBOutlet weak var autocompleteToggle: UISwitch!
     @IBOutlet weak var authenticationToggle: UISwitch!
     @IBOutlet weak var homePageAccessoryText: UILabel!
     @IBOutlet weak var autoClearAccessoryText: UILabel!
     @IBOutlet weak var versionText: UILabel!
     @IBOutlet weak var openUniversalLinksToggle: UISwitch!
+    @IBOutlet weak var longPressPreviewsToggle: UISwitch!
+    @IBOutlet weak var rememberLoginsCell: UITableViewCell!
+    @IBOutlet weak var rememberLoginsAccessoryText: UILabel!
+
+    @IBOutlet weak var longPressCell: UITableViewCell!
 
     @IBOutlet var labels: [UILabel]!
     @IBOutlet var accessoryLabels: [UILabel]!
     
     weak var homePageSettingsDelegate: HomePageSettingsDelegate?
+    weak var preserveLoginsSettingsDelegate: PreserveLoginsSettingsDelegate?
 
     private lazy var versionProvider: AppVersion = AppVersion.shared
     fileprivate lazy var privacyStore = PrivacyUserDefaults()
@@ -55,6 +63,8 @@ class SettingsViewController: UITableViewController {
         configureSecurityToggles()
         configureVersionText()
         configureUniversalLinksToggle()
+        configureLinkPreviewsToggle()
+        configureRememberLogins()
         
         applyTheme(ThemeManager.shared.currentTheme)
     }
@@ -63,8 +73,10 @@ class SettingsViewController: UITableViewController {
         super.viewWillAppear(animated)
         
         configureAutoClearCellAccessory()
+        configureRememberLogins()
         configureHomePageCellAccessory()
         migrateFavoritesIfNeeded()
+        configureIconViews()
     }
     
     private func migrateFavoritesIfNeeded() {
@@ -75,6 +87,11 @@ class SettingsViewController: UITableViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if let controller = segue.destination as? PreserveLoginsSettingsViewController {
+            controller.delegate = preserveLoginsSettingsDelegate
+            return
+        }
+
         if segue.destination is AutoClearSettingsViewController {
             Pixel.fire(pixel: .autoClearSettingsShown)
             return
@@ -82,6 +99,11 @@ class SettingsViewController: UITableViewController {
         
         if segue.destination is ThemeSettingsViewController {
             Pixel.fire(pixel: .settingsThemeShown)
+            return
+        }
+
+        if segue.destination is AppIconSettingsViewController {
+            Pixel.fire(pixel: .settingsAppIconShown)
             return
         }
         
@@ -126,6 +148,14 @@ class SettingsViewController: UITableViewController {
         }
     }
 
+    private func configureIconViews() {
+        if AppIconManager.shared.isAppIconChangeSupported {
+            appIconImageView.image = AppIconManager.shared.appIcon.smallImage
+        } else {
+            appIconCell.isHidden = true
+        }
+    }
+
     private func configureDisableAutocompleteToggle() {
         autocompleteToggle.isOn = appSettings.autocomplete
     }
@@ -158,6 +188,27 @@ class SettingsViewController: UITableViewController {
         }
         
     }
+    
+    private func configureRememberLogins() {
+        
+        if #available(iOS 13, *) {
+            rememberLoginsCell.isHidden = false
+            
+            switch PreserveLogins.shared.userDecision {
+                
+            case .preserveLogins:
+                rememberLoginsAccessoryText.text = UserText.preserveLoginsAccessoryOn
+                
+            case .forgetAll, .unknown:
+                rememberLoginsAccessoryText.text = UserText.preserveLoginsAccessoryOff
+                
+            }
+            
+        } else {
+            rememberLoginsCell.isHidden = true
+        }
+        
+    }
 
     private func configureVersionText() {
         versionText.text = versionProvider.localized
@@ -165,6 +216,13 @@ class SettingsViewController: UITableViewController {
     
     private func configureUniversalLinksToggle() {
         openUniversalLinksToggle.isOn = appSettings.allowUniversalLinks
+    }
+
+    private func configureLinkPreviewsToggle() {
+        if #available(iOS 13, *) {
+            longPressCell.isHidden = false
+        }
+        longPressPreviewsToggle.isOn = appSettings.longPressPreviews
     }
 
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -199,6 +257,11 @@ class SettingsViewController: UITableViewController {
         }
     }
 
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        return cell.isHidden ? 0 : super.tableView(tableView, heightForRowAt: indexPath)
+    }
+
     @IBAction func onAuthenticationToggled(_ sender: UISwitch) {
         privacyStore.authenticationEnabled = sender.isOn
     }
@@ -213,6 +276,11 @@ class SettingsViewController: UITableViewController {
     
     @IBAction func onAllowUniversalLinksToggled(_ sender: UISwitch) {
         appSettings.allowUniversalLinks = sender.isOn
+    }
+
+    @IBAction func onLinkPreviewsToggle(_ sender: UISwitch) {
+        appSettings.longPressPreviews = sender.isOn
+        Pixel.fire(pixel: appSettings.longPressPreviews ? .settingsLinkPreviewsOn : .settingsLinkPreviewsOff)
     }
 }
 
@@ -235,6 +303,7 @@ extension SettingsViewController: Themable {
         autocompleteToggle.onTintColor = theme.buttonTintColor
         authenticationToggle.onTintColor = theme.buttonTintColor
         openUniversalLinksToggle.onTintColor = theme.buttonTintColor
+        longPressPreviewsToggle.onTintColor = theme.buttonTintColor
         
         tableView.backgroundColor = theme.backgroundColor
         tableView.separatorColor = theme.tableCellSeparatorColor

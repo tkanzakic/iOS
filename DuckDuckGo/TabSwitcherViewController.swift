@@ -56,9 +56,30 @@ class TabSwitcherViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        collectionView.addGestureRecognizer(UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(gesture:))))
+        
         collectionView.reloadData()
     }
 
+    @objc func handleLongPress(gesture: UILongPressGestureRecognizer) {
+        switch gesture.state {
+        case .began:
+            guard let path = collectionView.indexPathForItem(at: gesture.location(in: collectionView)) else { return }
+            collectionView.beginInteractiveMovementForItem(at: path)
+            
+        case .changed:
+            collectionView.updateInteractiveMovementTargetPosition(gesture.location(in: collectionView))
+            
+        case .ended:
+            collectionView.endInteractiveMovement()
+            
+        default:
+            collectionView.cancelInteractiveMovement()
+        }
+        
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         scrollToInitialTab()
@@ -68,6 +89,11 @@ class TabSwitcherViewController: UIViewController {
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         delegate?.tabSwitcherDidDisappear(self)
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        collectionView.collectionViewLayout.invalidateLayout()
     }
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -143,7 +169,7 @@ class TabSwitcherViewController: UIViewController {
     
     @IBAction func onSettingsPressed(_ sender: UIButton) {
         // Segue performed from storyboard
-        Pixel.fire(pixel: .settingsOpened)
+        Pixel.fire(pixel: .settingsOpenedFromTabsSwitcher)
     }
 
     @IBAction func onAddPressed(_ sender: UIBarButtonItem) {
@@ -166,19 +192,16 @@ class TabSwitcherViewController: UIViewController {
     }
 
     @IBAction func onFirePressed() {
-        Pixel.fire(pixel: .forgetAllPressedTabSwitching)
+        Pixel.fire(pixel: .forgetAllPressedTabSwitching, withAdditionalParameters: PreserveLogins.shared.forgetAllPixelParameters)
         
-        let alert = ForgetDataAlert.buildAlert(forgetTabsHandler: { [weak self] in
-            self?.forgetTabs()
-        }, forgetTabsAndDataHandler: { [weak self] in
-            self?.forgetAll()
+        let alert = ForgetDataAlert.buildAlert(forgetTabsAndDataHandler: { [weak self] in
+            guard let self = self else { return }
+            PreserveLoginsAlert.showInitialPromptIfNeeded(usingController: self) { [weak self] in
+                self?.forgetAll()
+            }
         })
+        self.present(controller: alert, fromView: self.toolbar)
         
-        present(controller: alert, fromView: toolbar)
-    }
-    
-    private func forgetTabs() {
-        self.delegate.tabSwitcherDidRequestForgetTabs(tabSwitcher: self)
     }
 
     private func forgetAll() {
@@ -193,10 +216,18 @@ class TabSwitcherViewController: UIViewController {
 extension TabSwitcherViewController: TabViewCellDelegate {
 
     func deleteTab(tab: Tab) {
+        guard let index = tabsModel.indexOf(tab: tab) else { return }
         delegate.tabSwitcher(self, didRemoveTab: tab)
         currentSelection = tabsModel.currentIndex
         refreshTitle()
-        collectionView.reloadData()
+        
+        collectionView.performBatchUpdates({
+            self.collectionView.deleteItems(at: [IndexPath(row: index, section: 0)])
+        }, completion: { _ in
+            guard let current = self.currentSelection else { return }
+            self.collectionView.reloadItems(at: [IndexPath(row: current, section: 0)])
+        })
+        
     }
     
     func isCurrent(tab: Tab) -> Bool {
@@ -207,6 +238,10 @@ extension TabSwitcherViewController: TabViewCellDelegate {
 
 extension TabSwitcherViewController: UICollectionViewDataSource {
 
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return tabsModel.count
     }
@@ -217,6 +252,8 @@ extension TabSwitcherViewController: UICollectionViewDataSource {
             fatalError("Failed to dequeue cell \(TabViewCell.reuseIdentifier) as TablViewCell")
         }
         cell.delegate = self
+
+        cell.isDeleting = false
         cell.update(withTab: tab)
         return cell
     }
@@ -242,6 +279,25 @@ extension TabSwitcherViewController: UICollectionViewDelegate {
         currentSelection = indexPath.row
         markCurrentAsViewedAndDismiss()
     }
+   
+    func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, canMoveItemAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, targetIndexPathForMoveFromItemAt originalIndexPath: IndexPath,
+                        toProposedIndexPath proposedIndexPath: IndexPath) -> IndexPath {
+        return proposedIndexPath
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        tabsModel.moveTab(from: sourceIndexPath.row, to: destinationIndexPath.row)
+        currentSelection = tabsModel.currentIndex
+    }
+
 }
 
 extension TabSwitcherViewController: UICollectionViewDelegateFlowLayout {
@@ -251,7 +307,7 @@ extension TabSwitcherViewController: UICollectionViewDelegateFlowLayout {
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
         return CGSize(width: collectionView.bounds.size.width, height: 70)
     }
-
+    
 }
 
 extension TabSwitcherViewController: Themable {

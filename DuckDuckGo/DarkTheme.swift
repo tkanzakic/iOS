@@ -57,6 +57,8 @@ struct DarkTheme: Theme {
     var tableCellHighlightedBackgroundColor = UIColor.greyishBrown
     var tableHeaderTextColor = UIColor.greyish3
     
+    var iconCellBorderColor = UIColor.lightGreyish
+
     var buttonTintColor = UIColor.cornflowerBlue
     var placeholderColor = UIColor.greyish
     
@@ -86,4 +88,6 @@ struct DarkTheme: Theme {
     var privacyReportCellBackgroundColor = UIColor.nearlyBlackLight
     
     var activityStyle: UIActivityIndicatorView.Style = .white
+    
+    var destructiveColor: UIColor = UIColor.destructive
 }

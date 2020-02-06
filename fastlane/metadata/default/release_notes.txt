@@ -1,2 +1,2 @@
-• You can now use the Fire Button to close all tabs without clearing your session data. This is handy when you want to stay logged in!
-• Other minor bug fixes and improvements.
+• You can now customize your app icon from settings!
+• Other minor bug fixes and improvements.

@@ -132,6 +132,8 @@
 "home.row.reminder.title" = "Take DuckDuckGo home";
 "home.row.reminder.message" = "Add DuckDuckGo to your dock for easy access!";
 
+"home.row.onboarding.header" = "Add DuckDuckGo to your home screen!";
+
 "feedback.submitted.confirmation" = "Thank You! Feedback submitted.";
 
 "prompt.custom.url.scheme.title" = "Open in Another App?";
@@ -209,7 +211,7 @@
 "siteFeedback.buttonText" = "Submit Report";
 
 "feedback.start.header" = "Let's get started!";
-"feedback.start.supplementary" = "How would you catagorize your feedback?";
+"feedback.start.supplementary" = "How would you categorize your feedback?";
 "feedback.start.footer" = "Your anonymous feedback is important to us.";
 
 "feedback.positive.header" = "Awesome to hear!";
@@ -280,8 +282,19 @@
 
 "feedback.form.caption" = "Please tell us what we can improve";
 
+"onboardingWelcomeHeader" = "Welcome to DuckDuckGo!";
 "onboardingContinue" = "Continue";
 "onboardingSkip" = "Skip";
 "onboardingStartBrowsing" = "Start Browsing";
 "onboardingNotificationsAccept" = "Turn on Notifications";
 "onboardingNotificationsDeny" = "Not now";
+
+"preserveLogins.title" = "Stay Signed In To Websites?";
+"preserveLogins.message" = "Data needed to keep you signed in will be saved each time you clear your data. You can change this later in settings.";
+"preserveLogins.remember" = "Yes";
+"preserveLogins.forget" = "No, Clear Everything";
+"preserveLogins.accessory.on" = "On";
+"preserveLogins.accessory.off" = "Off";
+"preserveLogins.switch.footer" = "Allows you to stay signed in to websites when you clear your data";
+"preserveLogins.domain.list.title" = "Signed In Websites";
+"preserveLogins.sign.out" = "Sign Out";

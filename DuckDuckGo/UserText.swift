@@ -94,8 +94,6 @@ public struct UserText {
     public static let privacyProtectionTOSMixed = NSLocalizedString("privacy.protection.tos.mixed", comment: "Mixed Privacy Practices")
     public static let privacyProtectionTOSPoor = NSLocalizedString("privacy.protection.tos.poor", comment: "Poor Privacy Practices")
 
-    public static let privacyProtectionReloadBlockerLists = NSLocalizedString("privacy.protection.reload.blocker.lists", comment: "This can be caused by a loss of internet connection when loading the content blocking rules.")
-
     public static let ppEncryptionCertError = NSLocalizedString("privacy.protection.encryption.cert.error", comment: "Error extracting certificate")
     public static let ppEncryptionSubjectName = NSLocalizedString("privacy.protection.encryption.subject.name", comment:  "Subject Name")
     public static let ppEncryptionPublicKey = NSLocalizedString("privacy.protection.encryption.public.key", comment:  "Public Key")
@@ -147,6 +145,8 @@ public struct UserText {
     
     public static let homeRowReminderTitle = NSLocalizedString("home.row.reminder.title", comment:  "Home Row Reminder Title")
     public static let homeRowReminderMessage = NSLocalizedString("home.row.reminder.message", comment:  "Home Row Reminder Message")
+    
+    public static let homeRowOnboardingHeader = NSLocalizedString("home.row.onboarding.header", comment:  "Home Row onboarding Header")
     
     public static let feedbackSumbittedConfirmation = NSLocalizedString("feedback.submitted.confirmation", comment:  "Feedback submitted confirmation")
     
@@ -235,9 +235,21 @@ public struct UserText {
     public static let favorite = NSLocalizedString("favorite", comment: "Favorite")
     public static let privacyFeatures = NSLocalizedString("privacy.features", comment: "Privacy Features")
 
+    public static let onboardingWelcomeHeader = NSLocalizedString("onboardingWelcomeHeader", comment: "Welcome to DuckDuckGo!")
     public static let onboardingContinue = NSLocalizedString("onboardingContinue", comment: "Continue")
     public static let onboardingSkip = NSLocalizedString("onboardingSkip", comment: "Skip")
     public static let onboardingStartBrowsing = NSLocalizedString("onboardingStartBrowsing", comment: "Start browsing")
     public static let onboardingNotificationsAccept = NSLocalizedString("onboardingNotificationsAccept", comment: "Turn on Notifications")
     public static let onboardingNotificationsDeny = NSLocalizedString("onboardingNotificationsDeny", comment: "Not now")
+    
+    public static let preserveLoginsTitle = NSLocalizedString("preserveLogins.title", comment: "Preserve logins title")
+    public static let preserveLoginsMessage = NSLocalizedString("preserveLogins.message", comment: "Preserve logins message")
+    public static let preserveLoginsRemember = NSLocalizedString("preserveLogins.remember", comment: "Preserve logins remember")
+    public static let preserveLoginsForget = NSLocalizedString("preserveLogins.forget", comment: "Preserve logins forget")
+    public static let preserveLoginsAccessoryOn = NSLocalizedString("preserveLogins.accessory.on", comment: "Preserve logins accessory on")
+    public static let preserveLoginsAccessoryOff = NSLocalizedString("preserveLogins.accessory.off", comment: "Preserve logins accessory off")
+    public static let preserveLoginsDomainListHeaderTitle = NSLocalizedString("preserveLogins.domain.list.title", comment: "Preserve logins domain list title")
+    public static let preserveLoginsSwitchFooter = NSLocalizedString("preserveLogins.switch.footer", comment: "Preserve logins switch footer")
+    public static let preserveLoginsSignOut = NSLocalizedString("preserveLogins.sign.out", comment: "Preserve logins clear all prompt")
+
 }

@@ -20,13 +20,6 @@
 import Foundation
 @testable import Core
 
-extension EntityMapping {
-    
-    public convenience init() {
-        self.init(store: DownloadedEntityMappingStore())
-    }
-}
-
 extension PrivacyPractices {
     
     public convenience init(termsOfServiceStore: TermsOfServiceStore) {
@@ -59,21 +52,42 @@ extension SiteRating {
         self.init(url: url,
                   httpsForced: httpsForced,
                   entityMapping: entityMapping,
-                  privacyPractices: privacyPractices ?? PrivacyPractices(entityMapping: entityMapping),
-                  prevalenceStore: EmbeddedPrevalenceStore())
+                  privacyPractices: privacyPractices ?? PrivacyPractices(entityMapping: entityMapping))
     }
     
     public convenience init(url: URL,
                             httpsForced: Bool = false,
-                            entityMapping: EntityMapping = EntityMapping(),
-                            prevalenceStore: PrevalenceStore) {
+                            entityMapping: EntityMapping = EntityMapping()) {
         
         let privacyPractices = PrivacyPractices(entityMapping: entityMapping)
         
         self.init(url: url,
                   httpsForced: httpsForced,
                   entityMapping: entityMapping,
-                  privacyPractices: privacyPractices,
-                  prevalenceStore: prevalenceStore)
+                  privacyPractices: privacyPractices)
     }
+}
+
+extension HTTPCookie {
+    
+    static func make(name: String = "name",
+                     value: String = "value",
+                     domain: String = "example.com",
+                     path: String = "/",
+                     policy: HTTPCookieStringPolicy? = nil) -> HTTPCookie {
+        
+        var properties: [HTTPCookiePropertyKey: Any] = [
+            .name: name,
+            .value: value,
+            .domain: domain,
+            .path: path
+        ]
+        
+        if #available(iOS 13, *), policy != nil {
+            properties[HTTPCookiePropertyKey.sameSitePolicy] = policy
+        }
+        
+        return HTTPCookie(properties: properties)!        
+    }
+    
 }

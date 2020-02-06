@@ -55,6 +55,7 @@ class MainViewController: UIViewController {
     @IBOutlet weak var findInPageBottomLayoutConstraint: NSLayoutConstraint!
     
     weak var notificationView: NotificationView?
+    weak var homeRowCTAController: UIViewController?
 
     var omniBar: OmniBar!
     var chromeManager: BrowserChromeManager!
@@ -108,6 +109,15 @@ class MainViewController: UIViewController {
         registerForKeyboardNotifications()
 
         applyTheme(ThemeManager.shared.currentTheme)
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        startOnboardingFlowIfNotSeenBefore()
+
+        if HomeRowCTA().shouldShow() {
+            showHomeRowCTA()
+        }
     }
     
     private func registerForKeyboardNotifications() {
@@ -211,6 +221,7 @@ class MainViewController: UIViewController {
         if let navigationController = segue.destination as? UINavigationController,
             let controller = navigationController.topViewController as? SettingsViewController {
             controller.homePageSettingsDelegate = self
+            controller.preserveLoginsSettingsDelegate = self
             return
         }
         
@@ -296,20 +307,22 @@ class MainViewController: UIViewController {
     }
 
     @IBAction func onFirePressed() {
-        Pixel.fire(pixel: .forgetAllPressedBrowsing)
-        
-        let alert = ForgetDataAlert.buildAlert(forgetTabsHandler: { [weak self] in
-            self?.forgetTabsWithAnimation {}
-        }, forgetTabsAndDataHandler: { [weak self] in
-            self?.forgetAllWithAnimation {}
+        Pixel.fire(pixel: .forgetAllPressedBrowsing, withAdditionalParameters: PreserveLogins.shared.forgetAllPixelParameters)
+
+        let alert = ForgetDataAlert.buildAlert(forgetTabsAndDataHandler: { [weak self] in
+            guard let self = self else { return }
+            PreserveLoginsAlert.showInitialPromptIfNeeded(usingController: self) { [weak self] in
+                self?.forgetAllWithAnimation {}
+            }
         })
-        
-        present(controller: alert, fromView: toolbar)
+        self.present(controller: alert, fromView: self.toolbar)
     }
     
     func onQuickFirePressed() {
-        forgetAllWithAnimation {}
-        dismiss(animated: true)
+        PreserveLoginsAlert.showInitialPromptIfNeeded(usingController: self) {
+            self.forgetAllWithAnimation {}
+            self.dismiss(animated: true)
+        }
     }
 
     @IBAction func onBackPressed() {
@@ -855,9 +868,19 @@ extension MainViewController: TabDelegate {
         animateBackgroundTab()
     }
 
-    func tab(_ tab: TabViewController, didRequestNewTabForUrl url: URL) {
+    func tab(_ tab: TabViewController, didRequestNewTabForUrl url: URL, animated: Bool) {
         _ = findInPageView.resignFirstResponder()
-        loadUrlInNewTab(url)
+
+        if animated {
+            showBars()
+            newTabAnimation {
+                self.loadUrlInNewTab(url)
+            }
+            tabSwitcherButton.incrementAnimated()
+        } else {
+            loadUrlInNewTab(url)
+        }
+
     }
 
     func tab(_ tab: TabViewController, didChangeSiteRating siteRating: SiteRating?) {
@@ -888,6 +911,29 @@ extension MainViewController: TabDelegate {
         _ = findInPageView?.becomeFirstResponder()
     }
 
+    private func newTabAnimation(completion: @escaping () -> Void) {
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+        let x = view.frame.midX
+        let y = view.frame.midY
+        
+        let theme = ThemeManager.shared.currentTheme
+        let view = UIView(frame: CGRect(x: x, y: y, width: 5, height: 5))
+        view.layer.borderWidth = 1
+        view.layer.cornerRadius = 10
+        view.layer.borderColor = theme.barTintColor.cgColor
+        view.backgroundColor = theme.backgroundColor
+        view.center = self.view.center
+        self.view.addSubview(view)
+        UIView.animate(withDuration: 0.3, animations: {
+            view.frame = self.view.frame
+            view.alpha = 0.9
+        }, completion: { _ in
+            view.removeFromSuperview()
+            completion()
+        })
+    }
+
 }
 
 extension MainViewController: TabSwitcherDelegate {
@@ -911,15 +957,9 @@ extension MainViewController: TabSwitcherDelegate {
         guard let index = tabManager.model.indexOf(tab: tab) else { return }
         remove(tabAt: index)
     }
-    
-    func tabSwitcherDidRequestForgetTabs(tabSwitcher: TabSwitcherViewController) {
-        forgetTabsWithAnimation {
-            tabSwitcher.dismiss(animated: false, completion: nil)
-        }
-    }
 
     func tabSwitcherDidRequestForgetAll(tabSwitcher: TabSwitcherViewController) {
-        forgetAllWithAnimation {
+        self.forgetAllWithAnimation {
             tabSwitcher.dismiss(animated: false, completion: nil)
         }
     }
@@ -1002,28 +1042,21 @@ extension MainViewController: AutoClearWorker {
     
     func forgetData() {
         findInPageView?.done()
+        
+        if PreserveLogins.shared.userDecision != .preserveLogins {
+            PreserveLogins.shared.clearAll()
+        } else {
+            PreserveLogins.shared.clearDetected()
+        }
+        
         ServerTrustCache.shared.clear()
         KingfisherManager.shared.cache.clearDiskCache()
-        WebCacheManager.clear()
-    }
-    
-    fileprivate func forgetTabsWithAnimation(completion: @escaping () -> Void) {
-        let spid = Instruments.shared.startTimedEvent(.clearingTabs)
-        findInPageView.done()
-        Pixel.fire(pixel: .forgetTabsExecuted)
-        FireAnimation.animate {
-            self.forgetTabs()
-            completion()
-            Instruments.shared.endTimedEvent(for: spid)
-        }
-        let window = UIApplication.shared.keyWindow
-        window?.showBottomToast(UserText.actionForgetTabsDone, duration: 1)
+        WebCacheManager.shared.clear { }
     }
     
     fileprivate func forgetAllWithAnimation(completion: @escaping () -> Void) {
         let spid = Instruments.shared.startTimedEvent(.clearingData)
-        findInPageView.done()
-        Pixel.fire(pixel: .forgetAllExecuted)
+        Pixel.fire(pixel: .forgetAllExecuted, withAdditionalParameters: PreserveLogins.shared.forgetAllPixelParameters)
         forgetData()
         FireAnimation.animate {
             self.forgetTabs()
@@ -1070,6 +1103,52 @@ extension MainViewController: HomePageSettingsDelegate {
         guard homeController != nil else { return }
         removeHomeScreen()
         attachHomeScreen()
+    }
+    
+}
+
+extension MainViewController: PreserveLoginsSettingsDelegate {
+
+    func forgetAllRequested(completion: @escaping () -> Void) {
+        forgetAllWithAnimation(completion: completion)
+    }
+
+}
+
+extension MainViewController: OnboardingDelegate {
+        
+    func onboardingCompleted(controller: UIViewController) {
+        markOnboardingSeen()
+        controller.modalTransitionStyle = .crossDissolve
+        controller.dismiss(animated: true)
+        homeController?.resetHomeRowCTAAnimations()
+        showHomeRowCTA()
+    }
+    
+    func markOnboardingSeen() {
+        var settings = DefaultTutorialSettings()
+        settings.hasSeenOnboarding = true
+    }
+    
+}
+
+extension MainViewController {
+    
+    private func hideHomeRowCTA() {
+        homeRowCTAController?.view.removeFromSuperview()
+        homeRowCTAController?.removeFromParent()
+        homeRowCTAController = nil
+    }
+
+    private func showHomeRowCTA(variantManager: VariantManager = DefaultVariantManager()) {
+        guard variantManager.isSupported(feature: .alertCTA), homeRowCTAController == nil else { return }
+        
+        let childViewController =  UnifiedAddToHomeRowCTAViewController.loadAlertFromStoryboard()
+        addChild(childViewController)
+        view.addSubview(childViewController.view)
+        childViewController.view.frame = view.bounds
+        childViewController.didMove(toParent: self)
+        self.homeRowCTAController = childViewController
     }
     
 }

@@ -27,7 +27,6 @@ public enum PixelName: String {
     case forgetAllPressedBrowsing = "mf_bp"
     case forgetAllPressedTabSwitching = "mf_tp"
     case forgetAllExecuted = "mf"
-    case forgetTabsExecuted = "mf_t"
     
     case privacyDashboardOpened = "mp"
     case privacyDashboardScorecard = "mp_c"
@@ -66,6 +65,7 @@ public enum PixelName: String {
     case overlayFavoriteLaunched = "m_ov_f"
     
     case settingsOpened = "ms"
+    case settingsOpenedFromTabsSwitcher = "ms_ot"
     case settingsHomeRowInstructionsRequested = "ms_hr"
     
     case settingsThemeShown = "ms_tp"
@@ -73,12 +73,23 @@ public enum PixelName: String {
     case settingsThemeChangedLight = "ms_tl"
     case settingsThemeChangedDark = "ms_td"
 
+    case settingsAppIconShown = "ms_ais"
+    case settingsAppIconChangedPrefix = "ms_aic_"
+    case settingsAppIconChangedRed = "ms_aic_red"
+    case settingsAppIconChangedYellow = "ms_aic_yellow"
+    case settingsAppIconChangedGreen = "ms_aic_green"
+    case settingsAppIconChangedBlue = "ms_aic_blue"
+    case settingsAppIconChangedPurple = "ms_aic_purple"
+    case settingsAppIconChangedBlack = "ms_aic_black"
+
     case settingsHomePageShown = "ms_hp"
     case settingsHomePageSimple = "ms_hp_s"
     case settingsHomePageCenterSearch = "ms_hp_c"
     case settingsHomePageCenterSearchAndFavorites = "ms_hp_f"
     case settingsManageWhitelist = "ms_mw"
-    
+    case settingsLinkPreviewsOff = "ms_lp_f"
+    case settingsLinkPreviewsOn = "ms_lp_n"
+
     case autoClearSettingsShown = "mac_s"
     case autoClearActionOptionNone = "macwhat_n"
     case autoClearActionOptionTabs = "macwhat_t"
@@ -123,6 +134,7 @@ public enum PixelName: String {
     
     case homeRowCTAShowMeTapped = "m_ha"
     case homeRowCTANoThanksTapped = "m_hb"
+    case homeRowCTAGotItTapped = "m_hg"
     
     case homeRowCTAReminderTapped = "m_hc"
     case homeRowCTAReminderDismissed = "m_hd"
@@ -166,24 +178,58 @@ public enum PixelName: String {
     case notificationOptIn = "m_ne"
     case notificationOptOut = "m_nd"
     
-    case etagStoreOOSWithDisconnectMeFix = "m_d_dcf_oos"
-    case etagStoreOOSWithEasylistFix = "m_d_elf_oos"
+    case brokenSiteReported = "m_bsr"
+
+    case preserveLoginsUserDecisionPreserve = "m_pl_p"
+    case preserveLoginsUserDecisionForget = "m_pl_f"
+    case preserveLoginsSettingsWhilePreserving = "m_pl_s_p"
+    case preserveLoginsSettingsWhileForgetting = "m_pl_s_f"
+    case preserveLoginsSettingsNewUser = "m_pl_s_u"
+    case preserveLoginsSettingsSwitchOn = "m_pl_s_on"
+    case preserveLoginsSettingsSwitchOff = "m_pl_s_off"
+    case preserveLoginsSettingsEdit = "m_pl_s_c_e"
+    case preserveLoginsSettingsDeleteEditing = "m_pl_s_c_ie"
+    case preserveLoginsSettingsDeleteNotEditing = "m_pl_s_c_in"
+    case preserveLoginsSettingsClearAll = "m_pl_s_c_a"
+    
+    // debug pixels:
     
     case dbMigrationError = "m_d_dbme"
     case dbRemovalError = "m_d_dbre"
     case dbDestroyError = "m_d_dbde"
+    case dbDestroyFileError = "m_d_dbdf"
     case dbInitializationError = "m_d_dbie"
     case dbSaveWhitelistError = "m_d_dbsw"
     case dbSaveBloomFilterError = "m_d_dbsb"
     
     case configurationFetchInfo = "m_d_cfgfetch"
-    case brokenSiteReported = "m_bsr"
+    
+    case trackerDataParseFailed = "m_d_tds_p"
+    case trackerDataReloadFailed = "m_d_tds_r"
+    case trackerDataCouldNotBeLoaded = "m_d_tds_l"
+    case fileStoreWriteFailed = "m_d_fswf"
+    
+    case webKitDidTerminate = "m_d_wkt"
+
+    case settingsAppIconChangeFailed = "m_d_aicf"
+    case settingsAppIconChangeNotSupported = "m_d_aicns"
 }
 
 public struct PixelParameters {
     public static let url = "url"
     public static let duration = "dur"
     static let test = "test"
+    static let appVersion = "appVersion"
+    
+    static let applicationState = "as"
+    static let dataAvailiability = "dp"
+    
+    static let errorCode = "e"
+    static let errorDesc = "d"
+    static let errorCount = "c"
+    static let underlyingErrorCode = "ue"
+    static let underlyingErrorDesc = "ud"
+    
 }
 
 public struct PixelValues {
@@ -209,6 +255,7 @@ public class Pixel {
                             onComplete: @escaping (Error?) -> Void = {_ in }) {
         
         var newParams = params
+        newParams[PixelParameters.appVersion] = AppVersion.shared.versionAndBuildNumber
         if isDebugBuild {
             newParams[PixelParameters.test] = PixelValues.test
         }
@@ -228,12 +275,22 @@ public class Pixel {
 
 extension Pixel {
     
-    public static func fire(pixel: PixelName, error: Error) {
+    public static func fire(pixel: PixelName, error: Error, withAdditionalParameters params: [String: String?] = [:], isCounted: Bool = false) {
         let nsError = error as NSError
+        var newParams = params
+        newParams[PixelParameters.errorCode] = "\(nsError.code)"
+        newParams[PixelParameters.errorDesc] = nsError.domain
         
-        let params: [String: String?] = ["e": "\(nsError.code)", "d": nsError.domain]
+        if isCounted {
+            let count = PixelCounterStore().incrementCountFor(pixel)
+            newParams[PixelParameters.errorCount] = "\(count)"
+        }
         
-        fire(pixel: pixel, withAdditionalParameters: params)
+        if let underlyingError = nsError.userInfo["NSUnderlyingError"] as? NSError {
+            newParams[PixelParameters.underlyingErrorCode] = "\(underlyingError.code)"
+            newParams[PixelParameters.underlyingErrorDesc] = underlyingError.domain
+        }
+        fire(pixel: pixel, withAdditionalParameters: newParams)
     }
 }
 
