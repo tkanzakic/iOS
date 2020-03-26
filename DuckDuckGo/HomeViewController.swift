@@ -58,7 +58,6 @@ class HomeViewController: UIViewController {
 
     weak var delegate: HomeControllerDelegate?
     weak var chromeDelegate: BrowserChromeDelegate?
-    weak var homeRowCTAController: UIViewController?
     
     private var viewHasAppeared = false
     private var defaultVerticalAlignConstant: CGFloat = 0
@@ -113,49 +112,25 @@ class HomeViewController: UIViewController {
         delegate?.showSettings(self)
     }
     
-    func launchPrivacyReport() {
-        delegate?.showPrivacyReport(self)
-    }
-    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        Pixel.fire(pixel: .homeScreenShown)
-        
-        if HomeRowCTA().shouldShow() {
-            showHomeRowCTA()
+        if presentedViewController == nil { // prevents these being called when settings forces this controller to be reattached
+            Pixel.fire(pixel: .homeScreenShown)
+            installHomeScreenTips()
         }
-        
-        installHomeScreenTips()
         
         viewHasAppeared = true
     }
     
-    func resetHomeRowCTAAnimations(variantManager: VariantManager = DefaultVariantManager()) {
+    func prepareForPresentation() {
         installHomeScreenTips()
-
-        if HomeRowCTA().shouldShow() {
-            showHomeRowCTA()
-        }
     }
 
     @IBAction func hideKeyboard() {
         // without this the keyboard hides instantly and abruptly
         UIView.animate(withDuration: 0.5) {
             self.chromeDelegate?.omniBar.resignFirstResponder()
-        }
-    }
-
-    @IBAction func showInstructions() {
-        delegate?.showInstructions(self)
-        dismissInstructions()
-    }
-
-    @IBAction func dismissInstructions() {
-        HomeRowCTA().dismissed()
-        hideHomeRowCTA()
-        UIView.animate(withDuration: 0.3) {
-            self.view.layoutIfNeeded()
         }
     }
 
@@ -177,24 +152,6 @@ class HomeViewController: UIViewController {
         if viewHasAppeared {
             UIView.animate(withDuration: duration) { self.view.layoutIfNeeded() }
         }
-    }
-
-    private func hideHomeRowCTA() {
-        homeRowCTAController?.view.removeFromSuperview()
-        homeRowCTAController?.removeFromParent()
-        homeRowCTAController = nil
-    }
-
-    private func showHomeRowCTA(variantManager: VariantManager = DefaultVariantManager()) {
-        guard !variantManager.isSupported(feature: .alertCTA),
-            homeRowCTAController == nil else { return }
-        
-        let childViewController = UnifiedAddToHomeRowCTAViewController.loadFromStoryboard()
-        addChild(childViewController)
-        view.addSubview(childViewController.view)
-        childViewController.view.frame = view.bounds
-        childViewController.didMove(toParent: self)
-        self.homeRowCTAController = childViewController
     }
 
     func load(url: URL) {
@@ -219,6 +176,7 @@ extension HomeViewController: FavoritesHomeViewSectionRendererDelegate {
         Pixel.fire(pixel: .homeScreenFavouriteLaunched)
         delegate?.home(self, didRequestUrl: link.url)
     }
+
 }
 
 extension HomeViewController: Themable {

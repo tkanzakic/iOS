@@ -1,2 +1,1 @@
-• You can now customize your app icon from settings!
-• Other minor bug fixes and improvements.
+• Bug fixes and other improvements.

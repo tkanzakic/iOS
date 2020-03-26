@@ -61,30 +61,30 @@ class HomeCollectionView: UICollectionView {
         contentInset = UIEdgeInsets(top: Constants.topInset, left: 0, bottom: 0, right: 0)
     }
     
+    deinit {
+        UIMenuController.shared.setMenuVisible(false, animated: true)
+    }
+    
     func configure(withController controller: HomeViewController, andTheme theme: Theme) {
         self.controller = controller
         renderers = HomeViewSectionRenderers(controller: controller, theme: theme)
         
         homePageConfiguration.components().forEach { component in
             switch component {
-            case .navigationBarSearch(let withOffset):
-                renderers.install(renderer: NavigationSearchHomeViewSectionRenderer(withOffset: withOffset))
+            case .navigationBarSearch(let fixed):
+                renderers.install(renderer: NavigationSearchHomeViewSectionRenderer(fixed: fixed))
                 
             case .centeredSearch(let fixed):
                 renderers.install(renderer: CenteredSearchHomeViewSectionRenderer(fixed: fixed))
                 
-            case .favorites(let withHeader):
-                renderers.install(renderer: FavoritesHomeViewSectionRenderer(headerEnabled: withHeader))
-                
-            case .privacyProtection:
-                renderers.install(renderer: PrivacyProtectionHomeViewSectionRenderer())
-                
-            case .padding(let withOffset):
-                renderers.install(renderer: PaddingSpaceHomeViewSectionRenderer(withOffset: withOffset))
-                
-            case .empty:
-                renderers.install(renderer: EmptySectionRenderer())
+            case .favorites:
+                renderers.install(renderer: FavoritesHomeViewSectionRenderer())
+
+            case .padding:
+                renderers.install(renderer: PaddingHomeViewSectionRenderer())
+
             }
+
         }
         
         dataSource = renderers

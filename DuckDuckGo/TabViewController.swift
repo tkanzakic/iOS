@@ -21,6 +21,7 @@ import WebKit
 import Core
 import Device
 import StoreKit
+import os.log
 
 // swiftlint:disable file_length
 // swiftlint:disable type_body_length
@@ -46,7 +47,9 @@ class TabViewController: UIViewController {
     var longPressGestureRecognizer: UILongPressGestureRecognizer?
     
     private let instrumentation = TabInstrumentation()
-   
+
+    var openedByPage = false
+    
     weak var delegate: TabDelegate?
     weak var chromeDelegate: BrowserChromeDelegate?
     var findInPage: FindInPage?
@@ -80,12 +83,16 @@ class TabViewController: UIViewController {
     
     public var url: URL? {
         didSet {
+            updateTabModel()
             delegate?.tabLoadingStateDidChange(tab: self)
         }
     }
     
-    public var name: String? {
-        return webView.title
+    override var title: String? {
+        didSet {
+            updateTabModel()
+            delegate?.tabLoadingStateDidChange(tab: self)
+        }
     }
     
     public var canGoBack: Bool {
@@ -118,7 +125,7 @@ class TabViewController: UIViewController {
             return tabModel.link
         }
         
-        let activeLink = Link(title: name, url: url)
+        let activeLink = Link(title: title, url: url)
         guard let storedLink = tabModel.link else {
             return activeLink
         }
@@ -158,6 +165,14 @@ class TabViewController: UIViewController {
         removeBrowsingTips()
     }
     
+    func updateTabModel() {
+        if let url = url {
+            tabModel.link = Link(title: title, url: url)
+        } else {
+            tabModel.link = nil
+        }
+    }
+    
     func installBrowsingTips() {
         tips = BrowsingTips(delegate: self)
     }
@@ -170,7 +185,7 @@ class TabViewController: UIViewController {
         shouldReloadOnError = true
     }
     
-    func attachWebView(configuration: WKWebViewConfiguration, andLoadUrl url: URL?, consumeCookies: Bool) {
+    func attachWebView(configuration: WKWebViewConfiguration, andLoadRequest request: URLRequest?, consumeCookies: Bool) {
         instrumentation.willPrepareWebView()
         webView = WKWebView(frame: view.bounds, configuration: configuration)
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -189,30 +204,38 @@ class TabViewController: UIViewController {
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webViewContainer.addSubview(webView)
-        let controller = webView.configuration.userContentController
-        controller.add(self, name: MessageHandlerNames.trackerDetected)
-        controller.add(self, name: MessageHandlerNames.possibleLogin)
-        controller.add(self, name: MessageHandlerNames.signpost)
-        controller.add(self, name: MessageHandlerNames.log)
-        controller.add(self, name: MessageHandlerNames.findInPageHandler)
+
+        removeMessageHandlers() // incoming config might be a copy of an existing confg with handlers
+        addMessageHandlers()
+
         reloadScripts()
         updateUserAgent()
         
         instrumentation.didPrepareWebView()
 
         if consumeCookies {
-            consumeCookiesThenLoadUrl(url)
-        } else if let url = url {
-            load(url: url)
+            consumeCookiesThenLoadRequest(request)
+        } else if let request = request {
+            load(urlRequest: request)
         }
     }
-    
+
+    private func addMessageHandlers() {
+        let controller = webView.configuration.userContentController
+        controller.add(self, name: MessageHandlerNames.trackerDetected)
+        controller.add(self, name: MessageHandlerNames.possibleLogin)
+        controller.add(self, name: MessageHandlerNames.signpost)
+        controller.add(self, name: MessageHandlerNames.log)
+        controller.add(self, name: MessageHandlerNames.findInPageHandler)
+    }
+
     private func addObservers() {
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.hasOnlySecureContent), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.url), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack), options: .new, context: nil)
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.canGoForward), options: .new, context: nil)
+        webView.addObserver(self, forKeyPath: #keyPath(WKWebView.title), options: .new, context: nil)
     }
     
     private func attachLongPressHandler(webView: WKWebView) {
@@ -222,16 +245,16 @@ class TabViewController: UIViewController {
         longPressGestureRecognizer = gestrueRecognizer
     }
     
-    private func consumeCookiesThenLoadUrl(_ url: URL?) {
+    private func consumeCookiesThenLoadRequest(_ request: URLRequest?) {
         webView.configuration.websiteDataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { _ in
             WebCacheManager.shared.consumeCookies { [weak self] in
                 guard let strongSelf = self else { return }
                 
-                if let url = url {
-                    strongSelf.load(url: url)
+                if let request = request {
+                    strongSelf.load(urlRequest: request)
                 }
                 
-                if url != nil {
+                if request != nil {
                     strongSelf.delegate?.tabLoadingStateDidChange(tab: strongSelf)
                     strongSelf.onWebpageDidStartLoading(httpsForced: false)
                 }
@@ -263,23 +286,26 @@ class TabViewController: UIViewController {
         
         switch keyPath {
             
-        case WebViewKeyPaths.estimatedProgress:
+        case #keyPath(WKWebView.estimatedProgress):
             progressWorker.progressDidChange(webView.estimatedProgress)
             
-        case WebViewKeyPaths.hasOnlySecureContent:
+        case #keyPath(WKWebView.hasOnlySecureContent):
             hasOnlySecureContentChanged(hasOnlySecureContent: webView.hasOnlySecureContent)
             
-        case WebViewKeyPaths.url:
-            urlDidChange()
+        case #keyPath(WKWebView.url):
+            self.url = self.webView.url
             
-        case WebViewKeyPaths.canGoBack:
+        case #keyPath(WKWebView.canGoBack):
             delegate?.tabLoadingStateDidChange(tab: self)
             
-        case WebViewKeyPaths.canGoForward:
+        case #keyPath(WKWebView.canGoForward):
             delegate?.tabLoadingStateDidChange(tab: self)
-            
+
+        case #keyPath(WKWebView.title):
+            title = webView.title
+
         default:
-            Logger.log(text: "Unhandled keyPath \(keyPath)")
+            os_log("Unhandled keyPath %s", log: generalLog, type: .debug, keyPath)
         }
     }
     
@@ -289,10 +315,14 @@ class TabViewController: UIViewController {
         updateSiteRating()
     }
     
-    private func urlDidChange() {
-        if self.url?.host == self.webView.url?.host {
-            self.url = self.webView.url
+    func fireproofWebsite(domain: String) {
+        
+        PreserveLoginsAlert.showConfirmFireproofWebsite(usingController: self) {
+            Pixel.fire(pixel: .browsingMenuFireproof)
+            PreserveLogins.shared.addToAllowed(domain: domain)
+            self.view.showBottomToast(UserText.preserveLoginsToast.format(arguments: domain))
         }
+        
     }
     
     private func checkForReloadOnError() {
@@ -327,8 +357,10 @@ class TabViewController: UIViewController {
     }
     
     func updateUserAgent() {
-        let userAgent = tabModel.isDesktop ? UserAgent.desktop : nil
-        webView.customUserAgent = userAgent
+        webView.customUserAgent = tabModel.isDesktop ? UserAgent.desktop : nil
+        if #available(iOS 13, *) {
+            webView.configuration.defaultWebpagePreferences.preferredContentMode = tabModel.isDesktop ? .desktop : .mobile
+        }
     }
     
     func goBack() {
@@ -554,7 +586,10 @@ class TabViewController: UIViewController {
         tearDownExecuted = true
         removeObservers()
         webView.removeFromSuperview()
+        removeMessageHandlers()
+    }
 
+    private func removeMessageHandlers() {
         let controller = webView.configuration.userContentController
         controller.removeScriptMessageHandler(forName: MessageHandlerNames.trackerDetected)
         controller.removeScriptMessageHandler(forName: MessageHandlerNames.possibleLogin)
@@ -569,6 +604,7 @@ class TabViewController: UIViewController {
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.url))
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.canGoForward))
         webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.canGoBack))
+        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.title))
     }
 
     func destroy() {
@@ -584,6 +620,7 @@ extension TabViewController: WKScriptMessageHandler {
         static let blocked = "blocked"
         static let networkName = "networkName"
         static let url = "url"
+        static let isSurrogate = "isSurrogate"
     }
 
     private struct MessageHandlerNames {
@@ -635,7 +672,11 @@ extension TabViewController: WKScriptMessageHandler {
             view.showBottomToast("Login detected for \(domain) via \(source)")
         }
         
-        PreserveLogins.shared.add(domain: domain)
+        if PreserveLogins.shared.userDecision == .preserveLogins {
+            PreserveLogins.shared.addToAllowed(domain: domain)
+        } else {
+            PreserveLogins.shared.addToDetected(domain: domain)
+        }
     }
     
     private func handleFindInPage(message: WKScriptMessage) {
@@ -646,7 +687,7 @@ extension TabViewController: WKScriptMessageHandler {
     }
 
     private func handleLog(message: WKScriptMessage) {
-        Logger.log(text: String(describing: message.body))
+        os_log("%s", log: generalLog, type: .debug, String(describing: message.body))
     }
     
     private func handleSignpost(message: WKScriptMessage) {
@@ -679,7 +720,7 @@ extension TabViewController: WKScriptMessageHandler {
     }
 
     private func handleTrackerDetected(message: WKScriptMessage) {
-        Logger.log(text: "\(MessageHandlerNames.trackerDetected) \(message.body)")
+        os_log("%s %s", log: generalLog, type: .debug, MessageHandlerNames.trackerDetected, String(describing: message.body))
 
         guard let siteRating = siteRating else { return }
         guard let dict = message.body as? [String: Any] else { return }
@@ -687,8 +728,12 @@ extension TabViewController: WKScriptMessageHandler {
         guard let urlString = dict[TrackerDetectedKey.url] as? String else { return }
         
         guard siteRating.isFor(self.url) else {
-            Logger.log(text: "mismatching domain \(self.url as Any) vs \(siteRating.domain as Any)")
+            os_log("mismatching domain %s vs %s", log: generalLog, type: .debug, self.url?.absoluteString ?? "nil", siteRating.domain ?? "nil")
             return
+        }
+        
+        if let isSurrogate = dict[TrackerDetectedKey.isSurrogate] as? Bool, isSurrogate, let host = URL(string: urlString)?.host {
+            siteRating.surrogateInstalled(host)
         }
 
         let tracker = trackerFromUrl(urlString.trimWhitespace(), blocked)
@@ -715,6 +760,17 @@ extension TabViewController: WKScriptMessageHandler {
         let knownTracker = TrackerDataManager.shared.findTracker(forUrl: urlString)
         let entity = TrackerDataManager.shared.findEntity(byName: knownTracker?.owner?.name ?? "")
         return DetectedTracker(url: urlString, knownTracker: knownTracker, entity: entity, blocked: blocked)
+    }
+    
+    public func getCurrentWebsiteInfo() -> BrokenSiteInfo {
+        let blockedTrackerDomains = siteRating?.trackersBlocked.compactMap { $0.domain } ?? []
+        
+        return BrokenSiteInfo(url: url,
+                              httpsUpgrade: httpsForced,
+                              blockedTrackerDomains: blockedTrackerDomains,
+                              installedSurrogates: siteRating?.installedSurrogates.map {$0} ?? [],
+                              isDesktop: tabModel.isDesktop,
+                              tdsETag: TrackerDataManager.shared.etag)
     }
     
 }
@@ -759,7 +815,7 @@ extension TabViewController: WKNavigationDelegate {
     }
     
     private func onWebpageDidStartLoading(httpsForced: Bool) {
-        Logger.log(items: "webpageLoading started:", Date().timeIntervalSince1970)
+        os_log("webpageLoading started", log: generalLog, type: .debug)
         self.httpsForced = httpsForced
         delegate?.showBars()
         
@@ -799,6 +855,7 @@ extension TabViewController: WKNavigationDelegate {
         shouldReloadOnError = false
         hideErrorMessage()
         showProgressIndicator()
+        detectedNewNavigation()
     }
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -809,13 +866,17 @@ extension TabViewController: WKNavigationDelegate {
     }
     
     private func onWebpageDidFinishLoading() {
-        Logger.log(items: "webpageLoading finished:", Date().timeIntervalSince1970)
+        os_log("webpageLoading finished", log: generalLog, type: .debug)
         siteRating?.finishedLoading = true
         updateSiteRating()
         tabModel.link = link
         UIApplication.shared.isNetworkActivityIndicatorVisible = false
         delegate?.tabLoadingStateDidChange(tab: self)
         tips?.onFinishedLoading(url: url, error: isError)
+    }
+    
+    private func detectedNewNavigation() {
+        Pixel.fire(pixel: .navigationDetected)
     }
 
     private func checkLoginDetectionAfterNavigation() {
@@ -840,7 +901,7 @@ extension TabViewController: WKNavigationDelegate {
     }
 
     private func webpageDidFailToLoad() {
-        Logger.log(items: "webpageLoading failed:", Date().timeIntervalSince1970)
+        os_log("webpageLoading failed", log: generalLog, type: .debug)
         if isError {
             showBars(animated: true)
         }
@@ -873,6 +934,7 @@ extension TabViewController: WKNavigationDelegate {
         self.url = url
         self.siteRating = makeSiteRating(url: url)
         updateSiteRating()
+        detectedNewNavigation()
         checkLoginDetectionAfterNavigation()
     }
             
@@ -887,17 +949,8 @@ extension TabViewController: WKNavigationDelegate {
                 }
                 
                 self?.findInPage?.done()
-                            
-                self?.loginDetection = nil
-                LoginDetection.webView(withURL: webView.url,
-                                       andCookies: webView.configuration.websiteDataStore,
-                                       allowedAction: navigationAction) { loginDetection in
-                    self?.loginDetection = loginDetection
-                    decisionHandler(decision)
-                }
-            } else {
-                decisionHandler(decision)
             }
+            decisionHandler(decision)
         }
     }
     
@@ -933,7 +986,7 @@ extension TabViewController: WKNavigationDelegate {
         }
         
         if isNewTargetBlankRequest(navigationAction: navigationAction) {
-            delegate?.tab(self, didRequestNewTabForUrl: url, animated: true)
+            delegate?.tab(self, didRequestNewTabForUrl: url, openedByPage: true)
             completion(.cancel)
             return
         }
@@ -996,18 +1049,25 @@ extension TabViewController: PrivacyProtectionDelegate {
 }
 
 extension TabViewController: WKUIDelegate {
+
     public func webView(_ webView: WKWebView,
                         createWebViewWith configuration: WKWebViewConfiguration,
                         for navigationAction: WKNavigationAction,
                         windowFeatures: WKWindowFeatures) -> WKWebView? {
-        webView.load(navigationAction.request)
-        return nil
+        return delegate?.tab(self, didRequestNewWebViewWithConfiguration: configuration, for: navigationAction)
     }
-    
+
+    func webViewDidClose(_ webView: WKWebView) {
+        if openedByPage {
+            delegate?.tabDidRequestClose(self)
+        }
+    }
+
     public func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         Pixel.fire(pixel: .webKitDidTerminate)
         delegate?.tabContentProcessDidTerminate(tab: self)
     }
+
 }
 
 extension TabViewController: UIPopoverPresentationControllerDelegate {
