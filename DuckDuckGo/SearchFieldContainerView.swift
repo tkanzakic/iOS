@@ -1,8 +1,8 @@
 //
-//  messaging.js
+//  SearchFieldContainerView.swift
 //  DuckDuckGo
 //
-//  Copyright © 2017 DuckDuckGo. All rights reserved.
+//  Copyright © 2020 DuckDuckGo. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -17,28 +17,20 @@
 //  limitations under the License.
 //
 
-var duckduckgoMessaging = function() {
+import UIKit
 
-	function trackerDetected(data) {
-		try {
-			webkit.messageHandlers.trackerDetectedMessage.postMessage(data);
-		} catch(error) {
-			// webkit might not be defined
-		}
-	}
+class SearchFieldContainerView: UIView {
     
-    function possibleLogin(source) {
-        try {
-            webkit.messageHandlers.possibleLogin.postMessage({ "source": source });
-        } catch(error) {
-            // webkit might not be defined
-        }
+    @IBOutlet var privacyViewWidth: NSLayoutConstraint!
+    @IBOutlet var textFieldOffset: NSLayoutConstraint!
+    
+    func hideSiteRatingView() {
+        privacyViewWidth.constant = 0
+        textFieldOffset.constant = 0
     }
-
-	return {
-
-		trackerDetected: trackerDetected,
-        possibleLogin: possibleLogin
-
-	}
-}()
+    
+    func revealSiteRatingView() {
+        privacyViewWidth.constant = 150
+        textFieldOffset.constant = 30
+    }
+}

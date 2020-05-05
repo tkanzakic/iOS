@@ -221,7 +221,6 @@ class MainViewController: UIViewController {
         if let navigationController = segue.destination as? UINavigationController,
             let controller = navigationController.topViewController as? SettingsViewController {
             controller.homePageSettingsDelegate = self
-            controller.preserveLoginsSettingsDelegate = self
             return
         }
 
@@ -301,24 +300,19 @@ class MainViewController: UIViewController {
     }
 
     @IBAction func onFirePressed() {
-        Pixel.fire(pixel: .forgetAllPressedBrowsing, withAdditionalParameters: PreserveLogins.shared.forgetAllPixelParameters)
+        Pixel.fire(pixel: .forgetAllPressedBrowsing)
 
         let alert = ForgetDataAlert.buildAlert(forgetTabsAndDataHandler: { [weak self] in
-            guard let self = self else { return }
-            PreserveLoginsAlert.showInitialPromptIfNeeded(usingController: self) { [weak self] in
-                self?.forgetAllWithAnimation {}
-            }
+            self?.forgetAllWithAnimation {}
         })
         self.present(controller: alert, fromView: self.toolbar)
     }
     
     func onQuickFirePressed() {
-        PreserveLoginsAlert.showInitialPromptIfNeeded(usingController: self) {
-            self.forgetAllWithAnimation {}
-            self.dismiss(animated: true)
-            if KeyboardSettings().onAppLaunch {
-                self.enterSearch()
-            }
+        self.forgetAllWithAnimation {}
+        self.dismiss(animated: true)
+        if KeyboardSettings().onAppLaunch {
+            self.enterSearch()
         }
     }
 
@@ -630,7 +624,7 @@ class MainViewController: UIViewController {
     
     func updateFindInPage() {
         currentTab?.findInPage?.delegate = self
-        findInPageView.update(with: currentTab?.findInPage)
+        findInPageView.update(with: currentTab?.findInPage, updateTextField: true)
     }
         
 }
@@ -638,7 +632,7 @@ class MainViewController: UIViewController {
 extension MainViewController: FindInPageDelegate {
     
     func updated(findInPage: FindInPage) {
-        findInPageView.update(with: findInPage)
+        findInPageView.update(with: findInPage, updateTextField: false)
     }
 
 }
@@ -1002,11 +996,7 @@ extension MainViewController: BookmarksDelegate {
     }
     
     func bookmarksUpdated() {
-        if bookmarkStore.favorites.isEmpty {
-            homePageChanged()
-        } else {
-            homeController?.refresh()
-        }
+        homePageChanged()
     }
 }
 
@@ -1080,12 +1070,18 @@ extension MainViewController: AutoClearWorker {
     
     fileprivate func forgetAllWithAnimation(completion: @escaping () -> Void) {
         let spid = Instruments.shared.startTimedEvent(.clearingData)
-        Pixel.fire(pixel: .forgetAllExecuted, withAdditionalParameters: PreserveLogins.shared.forgetAllPixelParameters)
+        Pixel.fire(pixel: .forgetAllExecuted)
         forgetData()
         FireAnimation.animate {
             self.forgetTabs()
             completion()
             Instruments.shared.endTimedEvent(for: spid)
+
+            if KeyboardSettings().onNewTab {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.enterSearch()
+                }
+            }
         }
         let window = UIApplication.shared.keyWindow
         window?.showBottomToast(UserText.actionForgetAllDone, duration: 1)
@@ -1129,14 +1125,6 @@ extension MainViewController: HomePageSettingsDelegate {
         attachHomeScreen()
     }
     
-}
-
-extension MainViewController: PreserveLoginsSettingsDelegate {
-
-    func forgetAllRequested(completion: @escaping () -> Void) {
-        forgetAllWithAnimation(completion: completion)
-    }
-
 }
 
 extension MainViewController: OnboardingDelegate {
