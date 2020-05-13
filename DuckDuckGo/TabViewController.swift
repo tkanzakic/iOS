@@ -141,7 +141,8 @@ class TabViewController: UIViewController {
         
         return activeLink.merge(with: storedLink)
     }
-    
+
+    var readerModeScript = ReaderModeUserScript()
     private var loginFormDetectionScript = LoginFormDetectionUserScript()
     private var contentBlockerScript = ContentBlockerUserScript()
     private var documentScript = DocumentUserScript()
@@ -192,7 +193,8 @@ class TabViewController: UIViewController {
         generalScripts = [
             debugScript,
             findInPageScript,
-            contentBlockerScript
+            contentBlockerScript,
+            readerModeScript
         ]
         
         ddgScripts = [
@@ -247,7 +249,8 @@ class TabViewController: UIViewController {
             webView.allowsLinkPreview = false
             documentScript.webView = webView
         }
-        
+        readerModeScript.webView = webView
+
         webView.allowsBackForwardNavigationGestures = true
         
         addObservers()

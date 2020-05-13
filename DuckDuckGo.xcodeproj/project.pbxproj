@@ -248,6 +248,8 @@
 		85CC936E203C402C00690089 /* SpeedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85CC936D203C402C00690089 /* SpeedTests.swift */; };
 		85CC9376203C42A500690089 /* speed_test_sites.json in Resources */ = {isa = PBXBuildFile; fileRef = 85CC9375203C42A500690089 /* speed_test_sites.json */; };
 		85E00179225E0D4E00877BF6 /* OnboardingSummaryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E00178225E0D4E00877BF6 /* OnboardingSummaryViewController.swift */; };
+		85E97283246B5E5800EDE746 /* ReaderModeUserScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E97282246B5E5800EDE746 /* ReaderModeUserScript.swift */; };
+		85E97288246B8E7200EDE746 /* readability.js in Resources */ = {isa = PBXBuildFile; fileRef = 85E97287246B8E7200EDE746 /* readability.js */; };
 		85EE7F55224667DD000FE757 /* WebContainer.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 85EE7F54224667DD000FE757 /* WebContainer.storyboard */; };
 		85EE7F572246685B000FE757 /* WebContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EE7F562246685B000FE757 /* WebContainerViewController.swift */; };
 		85EE7F59224673C5000FE757 /* WebContainerNavigationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EE7F58224673C5000FE757 /* WebContainerNavigationController.swift */; };
@@ -897,6 +899,8 @@
 		85CC9375203C42A500690089 /* speed_test_sites.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = speed_test_sites.json; sourceTree = "<group>"; };
 		85D08E5722B3AB1C0085C93D /* NetworkLeaderboard 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "NetworkLeaderboard 2.xcdatamodel"; sourceTree = "<group>"; };
 		85E00178225E0D4E00877BF6 /* OnboardingSummaryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingSummaryViewController.swift; sourceTree = "<group>"; };
+		85E97282246B5E5800EDE746 /* ReaderModeUserScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderModeUserScript.swift; sourceTree = "<group>"; };
+		85E97287246B8E7200EDE746 /* readability.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = readability.js; sourceTree = "<group>"; };
 		85EE7F54224667DD000FE757 /* WebContainer.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = WebContainer.storyboard; sourceTree = "<group>"; };
 		85EE7F562246685B000FE757 /* WebContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebContainerViewController.swift; sourceTree = "<group>"; };
 		85EE7F58224673C5000FE757 /* WebContainerNavigationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebContainerNavigationController.swift; sourceTree = "<group>"; };
@@ -1910,6 +1914,15 @@
 			path = SpeedTests;
 			sourceTree = "<group>";
 		};
+		85E97284246B5E6200EDE746 /* ReaderMode */ = {
+			isa = PBXGroup;
+			children = (
+				85E97287246B8E7200EDE746 /* readability.js */,
+				85E97282246B5E5800EDE746 /* ReaderModeUserScript.swift */,
+			);
+			name = ReaderMode;
+			sourceTree = "<group>";
+		};
 		85EE7F53224667C3000FE757 /* WebContainer */ = {
 			isa = PBXGroup;
 			children = (
@@ -2378,6 +2391,7 @@
 		F143C2E51E4A4CD400CFDE3A /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				85E97284246B5E6200EDE746 /* ReaderMode */,
 				8512BCBF2061B6110085E862 /* global.swift */,
 				F11E23051ED33D8B00523BC9 /* API */,
 				F1CE42A71ECA0A520074A8DF /* Bookmarks */,
@@ -3499,6 +3513,7 @@
 				83D306A41F6D500B00ED7CE2 /* tosdr.json in Resources */,
 				9833FD7222BCE44C00E95CD8 /* debug-messaging-disabled.js in Resources */,
 				8521FDEA238DA9D800A44CC3 /* trackerData.json in Resources */,
+				85E97288246B8E7200EDE746 /* readability.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4096,6 +4111,7 @@
 				F14513571F46388F00710C46 /* SiteRating.swift in Sources */,
 				F159BDA71F0C073D00B4A01D /* WebCacheSummary.swift in Sources */,
 				8521FDEC238DA9E600A44CC3 /* TrackerDataManager.swift in Sources */,
+				85E97283246B5E5800EDE746 /* ReaderModeUserScript.swift in Sources */,
 				85C743902154E981005CF998 /* GradeCache.swift in Sources */,
 				85BA79911F6FF75000F59015 /* ContentBlockerStoreConstants.swift in Sources */,
 				85BDC3142434D8F80053DB07 /* DebugUserScript.swift in Sources */,

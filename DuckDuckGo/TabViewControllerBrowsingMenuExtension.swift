@@ -31,6 +31,11 @@ extension TabViewController {
         }
         
         if let link = link, !isError {
+
+            if let action = buildReadabilityAction() {
+                alert.addAction(action)
+            }
+
             if let action = buildFindInPageAction(forLink: link) {
                 alert.addAction(action)
             }
@@ -70,6 +75,12 @@ extension TabViewController {
         }
         alert.addAction(title: UserText.actionCancel, style: .cancel)
         return alert
+    }
+
+    private func buildReadabilityAction() -> UIAlertAction? {
+        return !readerModeScript.canRead ? nil : UIAlertAction(title: "Reader Mode", style: .default, handler: { _ in
+            self.readerModeScript.makeReadable()
+        })
     }
     
     private func buildKeepSignInAction(forLink link: Link) -> UIAlertAction? {
