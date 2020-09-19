@@ -83,7 +83,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         
         clearLegacyAllowedDomainCookies()
-        
+
         appIsLaunching = true
         return true
     }
@@ -117,6 +117,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if !privacyStore.authenticationEnabled {
             showKeyboardOnLaunch()
         }
+
+        if let main = mainViewController {
+            GameViewController.launch(over: main)
+        }
+
     }
 
     private func fireAppLaunchPixel() {

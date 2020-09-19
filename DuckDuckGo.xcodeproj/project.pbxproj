@@ -134,6 +134,8 @@
 		8528AE7E212EF5FF00D0BD74 /* AppRatingPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8528AE7D212EF5FF00D0BD74 /* AppRatingPromptTests.swift */; };
 		8528AE81212F15D600D0BD74 /* AppRatingPrompt.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 8528AE7F212F15D600D0BD74 /* AppRatingPrompt.xcdatamodeld */; };
 		8528AE84212FF9A100D0BD74 /* AppRatingPromptStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8528AE82212FF91A00D0BD74 /* AppRatingPromptStorageTests.swift */; };
+		85303529251646F8009BA1F7 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85303528251646F8009BA1F7 /* GameViewController.swift */; };
+		8530353B251668D6009BA1F7 /* GaldaxiaScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */; };
 		8531A08E1F9950E6000484F0 /* UnprotectedSitesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8531A08D1F9950E6000484F0 /* UnprotectedSitesViewController.swift */; };
 		853273AB24FEF27500E3C778 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853273A924FEF24300E3C778 /* WidgetViews.swift */; };
 		853273AE24FEF49600E3C778 /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853273AC24FEF49600E3C778 /* ColorExtension.swift */; };
@@ -800,6 +802,8 @@
 		8528AE7D212EF5FF00D0BD74 /* AppRatingPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPromptTests.swift; sourceTree = "<group>"; };
 		8528AE80212F15D600D0BD74 /* AppRatingPrompt.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = AppRatingPrompt.xcdatamodel; sourceTree = "<group>"; };
 		8528AE82212FF91A00D0BD74 /* AppRatingPromptStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPromptStorageTests.swift; sourceTree = "<group>"; };
+		85303528251646F8009BA1F7 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
+		8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaldaxiaScene.swift; sourceTree = "<group>"; };
 		8531A08D1F9950E6000484F0 /* UnprotectedSitesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnprotectedSitesViewController.swift; sourceTree = "<group>"; };
 		853273A924FEF24300E3C778 /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		853273AC24FEF49600E3C778 /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
@@ -1595,6 +1599,7 @@
 				F143C2C51E4A08F300CFDE3A /* DuckDuckGo.entitlements */,
 				839F119520DBC489007CD8C2 /* Feedback */,
 				85F2FFFE2215C163006BB258 /* FindInPage */,
+				8530351E251645F3009BA1F7 /* Games */,
 				F13B4BF31F18C73A00814661 /* Home */,
 				84E341A11E2F7EFB00BDBA6F /* Info.plist */,
 				85DFEDEB24C7CC7600973FE7 /* iPad */,
@@ -1730,6 +1735,23 @@
 				8528AE7F212F15D600D0BD74 /* AppRatingPrompt.xcdatamodeld */,
 			);
 			name = AppStore;
+			sourceTree = "<group>";
+		};
+		8530351E251645F3009BA1F7 /* Games */ = {
+			isa = PBXGroup;
+			children = (
+				85303527251646C1009BA1F7 /* Galdaxia */,
+				85303528251646F8009BA1F7 /* GameViewController.swift */,
+			);
+			name = Games;
+			sourceTree = "<group>";
+		};
+		85303527251646C1009BA1F7 /* Galdaxia */ = {
+			isa = PBXGroup;
+			children = (
+				8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */,
+			);
+			name = Galdaxia;
 			sourceTree = "<group>";
 		};
 		8533133B1F98E9C000E061A5 /* PrivacyProtection */ = {
@@ -3676,9 +3698,11 @@
 				F17922E01E71BB59006E3D97 /* AutocompleteViewControllerDelegate.swift in Sources */,
 				8565A33D1FC3B26E00239327 /* PrivacyProtectionFooterController.swift in Sources */,
 				8528AE7C212EF4A200D0BD74 /* AppRatingPrompt.swift in Sources */,
+				8530353B251668D6009BA1F7 /* GaldaxiaScene.swift in Sources */,
 				85EE7F59224673C5000FE757 /* WebContainerNavigationController.swift in Sources */,
 				F10307391E7C5E310059FEC7 /* NoBookmarksCell.swift in Sources */,
 				981FED6E22025151008488D7 /* BlankSnapshotViewController.swift in Sources */,
+				85303529251646F8009BA1F7 /* GameViewController.swift in Sources */,
 				98F3A1DC217B373E0011A0D4 /* DarkTheme.swift in Sources */,
 				F164DDBF1F2A509200010DD2 /* FireAnimation.swift in Sources */,
 				851B128822200575004781BC /* Onboarding.swift in Sources */,
