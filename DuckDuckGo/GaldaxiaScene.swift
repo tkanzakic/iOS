@@ -10,6 +10,9 @@ import SpriteKit
 
 class GaldaxiaScene: SKScene {
 
+    let collisionBulletCategory: UInt32  = 0x1 << 0
+    let collisionEnemyCategory: UInt32 = 0x1 << 1
+
     static func create(onExit: @escaping () -> Void) -> SKScene {
         // Use iPhone SE (1st Gen) resolution
         let scene = GaldaxiaScene(size: CGSize(width: 320, height: 568))
@@ -41,6 +44,26 @@ class GaldaxiaScene: SKScene {
         addCloseButton()
         addDax()
         addTouchZone()
+        addEnemies()
+
+        physicsWorld.contactDelegate = self
+
+    }
+
+    private func addEnemies() {
+
+        let enemy = SKSpriteNode(imageNamed: "PP Network Icon facebook")
+        enemy.position = CGPoint(x: 200, y: 200)
+        enemy.run(.fadeIn(withDuration: 0.3))
+        addChild(enemy)
+
+        enemy.physicsBody = SKPhysicsBody(circleOfRadius: enemy.size.width / 2)
+        enemy.physicsBody?.isDynamic = true
+        enemy.physicsBody?.affectedByGravity = false
+        enemy.physicsBody?.categoryBitMask = collisionEnemyCategory
+        enemy.physicsBody?.contactTestBitMask = collisionBulletCategory
+        enemy.physicsBody?.collisionBitMask = 0x0
+        enemy.physicsBody?.usesPreciseCollisionDetection = true
 
     }
 
@@ -53,19 +76,14 @@ class GaldaxiaScene: SKScene {
     }
 
     private func moveDax(to position: CGPoint) {
-        print("***", #function, position)
-
         let x = position.x
 
         let distance = abs(dax.position.x - x)
         let duration = TimeInterval(distance / frame.width * 0.5)
 
-        print("***", #function, distance, duration)
-
         dax.removeAllActions()
 
         dax.run(SKAction.moveTo(x: x, duration: duration)) {
-            print("*** move finished")
             self.fire(from: self.dax.position)
         }
     }
@@ -110,16 +128,29 @@ class GaldaxiaScene: SKScene {
 
     private func fire(from position: CGPoint) {
 
-        let bullet = SKLabelNode(text: "🚀")
+        let bullet = SKShapeNode(circleOfRadius: 6)
         bullet.position = position
-        bullet.position.x += 8
-        bullet.zRotation = CGFloat(GLKMathDegreesToRadians(45))
-        bullet.horizontalAlignmentMode = .center
-        addChild(bullet)
+        bullet.position.y += 5
+        bullet.fillColor = .red
+
+        let rocket = SKLabelNode(text: "🚀")
+        rocket.zRotation = CGFloat(GLKMathDegreesToRadians(45))
+        rocket.position = CGPoint(x: 7, y: -24)
+        bullet.addChild(rocket)
+
+        insertChild(bullet, at: 0)
 
         bullet.run(.moveTo(y: frame.height + 25, duration: 1.0)) {
             bullet.removeFromParent()
         }
+
+        bullet.physicsBody = SKPhysicsBody(circleOfRadius: 6, center: CGPoint(x: 0.5, y: 0.5))
+        bullet.physicsBody?.isDynamic = true
+        bullet.physicsBody?.affectedByGravity = false
+        bullet.physicsBody?.categoryBitMask = collisionBulletCategory
+        bullet.physicsBody?.contactTestBitMask = collisionEnemyCategory
+        bullet.physicsBody?.collisionBitMask = 0x0;
+        bullet.physicsBody?.usesPreciseCollisionDetection = true
 
     }
 
@@ -141,6 +172,29 @@ class TappableShapeNode: SKShapeNode {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         tapped?(touch)
+    }
+
+}
+
+extension GaldaxiaScene: SKPhysicsContactDelegate {
+
+    func didBegin(_ contact: SKPhysicsContact) {
+
+        let explosionPosition = contact.bodyA.categoryBitMask == collisionEnemyCategory ?
+                contact.bodyA.node?.position : contact.bodyB.node?.position
+
+        contact.bodyA.node?.removeFromParent()
+        contact.bodyB.node?.removeFromParent()
+
+        score += 1
+
+        if let explosionPosition = explosionPosition,
+           let emitter = SKEmitterNode(fileNamed: "GaldaxiaExplosion") {
+            emitter.position = explosionPosition
+            emitter.run(.sequence([.wait(forDuration: 1.5), .removeFromParent()]))
+            addChild(emitter)
+        }
+
     }
 
 }

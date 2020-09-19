@@ -136,6 +136,7 @@
 		8528AE84212FF9A100D0BD74 /* AppRatingPromptStorageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8528AE82212FF91A00D0BD74 /* AppRatingPromptStorageTests.swift */; };
 		85303529251646F8009BA1F7 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85303528251646F8009BA1F7 /* GameViewController.swift */; };
 		8530353B251668D6009BA1F7 /* GaldaxiaScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */; };
+		853035692516CA06009BA1F7 /* GaldaxiaExplosion.sks in Resources */ = {isa = PBXBuildFile; fileRef = 853035682516CA06009BA1F7 /* GaldaxiaExplosion.sks */; };
 		8531A08E1F9950E6000484F0 /* UnprotectedSitesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8531A08D1F9950E6000484F0 /* UnprotectedSitesViewController.swift */; };
 		853273AB24FEF27500E3C778 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853273A924FEF24300E3C778 /* WidgetViews.swift */; };
 		853273AE24FEF49600E3C778 /* ColorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 853273AC24FEF49600E3C778 /* ColorExtension.swift */; };
@@ -804,6 +805,7 @@
 		8528AE82212FF91A00D0BD74 /* AppRatingPromptStorageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPromptStorageTests.swift; sourceTree = "<group>"; };
 		85303528251646F8009BA1F7 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
 		8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GaldaxiaScene.swift; sourceTree = "<group>"; };
+		853035682516CA06009BA1F7 /* GaldaxiaExplosion.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GaldaxiaExplosion.sks; sourceTree = "<group>"; };
 		8531A08D1F9950E6000484F0 /* UnprotectedSitesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnprotectedSitesViewController.swift; sourceTree = "<group>"; };
 		853273A924FEF24300E3C778 /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		853273AC24FEF49600E3C778 /* ColorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorExtension.swift; sourceTree = "<group>"; };
@@ -1750,6 +1752,7 @@
 			isa = PBXGroup;
 			children = (
 				8530353A251668D6009BA1F7 /* GaldaxiaScene.swift */,
+				853035682516CA06009BA1F7 /* GaldaxiaExplosion.sks */,
 			);
 			name = Galdaxia;
 			sourceTree = "<group>";
@@ -3418,6 +3421,7 @@
 				85EE7F55224667DD000FE757 /* WebContainer.storyboard in Resources */,
 				984E291B22CD68D600EE7154 /* PrivacyProtectionHomeCell.xib in Resources */,
 				0A6CC0EF23904D5400E4F627 /* Settings.bundle in Resources */,
+				853035692516CA06009BA1F7 /* GaldaxiaExplosion.sks in Resources */,
 				85A9C37920E0E00C00073340 /* HomeRow.xcassets in Resources */,
 				984147C624F026D100362052 /* SettingsTutorials.storyboard in Resources */,
 				AA4D6AE623DE4D33007E8790 /* AppIconGreen60x60@3x.png in Resources */,
