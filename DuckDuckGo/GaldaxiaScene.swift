@@ -50,10 +50,10 @@ class GaldaxiaScene: SKScene {
 
     }
 
-    private func addEnemies() {
+    private func addEnemy(atPoint point: CGPoint) {
 
         let enemy = SKSpriteNode(imageNamed: "PP Network Icon facebook")
-        enemy.position = CGPoint(x: 200, y: 200)
+        enemy.position = point
         enemy.run(.fadeIn(withDuration: 0.3))
         addChild(enemy)
 
@@ -64,6 +64,17 @@ class GaldaxiaScene: SKScene {
         enemy.physicsBody?.contactTestBitMask = collisionBulletCategory
         enemy.physicsBody?.collisionBitMask = 0x0
         enemy.physicsBody?.usesPreciseCollisionDetection = true
+    }
+
+    private func addEnemies() {
+
+        for x in 0 ..< 8 {
+            for y in 0 ..< 5 {
+
+                addEnemy(atPoint: CGPoint(x: (x * 30) + 50, y: (y * 28) + 350))
+
+            }
+        }
 
     }
 
