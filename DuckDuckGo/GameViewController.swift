@@ -20,10 +20,10 @@ class GameViewController: UIViewController {
         controller.modalPresentationStyle = .fullScreen
 
         let gameView = SKView(frame: controller.view.frame)
-        gameView.backgroundColor = .clear
         gameView.autoresizingMask = [ .flexibleWidth, .flexibleHeight ]
         gameView.presentScene(GaldaxiaScene.create(onExit: {
             controller.dismiss(animated: true)
+            gameView.presentScene(nil)
         }))
 
         controller.view.addSubview(gameView)
