@@ -96,7 +96,7 @@ class GaldaxiaScene: SKScene {
 
         physicsWorld.contactDelegate = self
 
-        newGame(delay: 3)
+        newGame(delay: 1)
     }
 
     private func addBoundary() {
@@ -216,6 +216,7 @@ class GaldaxiaScene: SKScene {
 
         if remaining == 0 {
             addEnemies()
+            // TODO bump difficulty
         }
     }
 
@@ -373,6 +374,8 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
             .move(to: CGPoint(x: x, y: y), duration: 2)
         ]))
 
+        addExplosion(at: dax.position)
+
         showGameOver()
     }
 
@@ -468,17 +471,18 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
         contact.bodyA.node?.removeFromParent()
         contact.bodyB.node?.removeFromParent()
 
-        if let explosionPosition = explosionPosition,
-           let emitter = SKEmitterNode(fileNamed: "GaldaxiaExplosion") {
+        if let explosionPosition = explosionPosition {
+            addExplosion(at: explosionPosition)
             score += 1
-
-            emitter.position = explosionPosition
-            emitter.run(.sequence([.wait(forDuration: 1.5), .removeFromParent()]))
-            addChild(emitter)
-
             replenishEnemies()
         }
+    }
 
+    private func addExplosion(at position: CGPoint) {
+        guard let emitter = SKEmitterNode(fileNamed: "GaldaxiaExplosion") else { return }
+        emitter.position = position
+        emitter.run(.sequence([.wait(forDuration: 1.5), .removeFromParent()]))
+        addChild(emitter)
     }
 
 }
