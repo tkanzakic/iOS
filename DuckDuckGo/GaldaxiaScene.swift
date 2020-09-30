@@ -23,13 +23,14 @@ class GaldaxiaScene: SKScene {
         static let collisionBulletCategory: UInt32  = 0x1 << 0
         static let collisionEnemyCategory: UInt32 = 0x1 << 1
         static let collisionWallCategory: UInt32 = 0x1 << 2
+        static let collisionDaxCategory: UInt32 = 0x1 << 3
+
         static let daxSize: CGFloat = 50
         static let enemyName = "enemy"
         static let width: CGFloat = 320
         static let height: CGFloat = 568
         static let rightMovement = CGVector(dx: 50, dy: 0)
         static let leftMovement = CGVector(dx: -50, dy: 0)
-        static let downMovement = CGVector(dx: 0, dy: -50)
         static let noMovement = CGVector(dx: 0, dy: 0)
     }
 
@@ -44,7 +45,7 @@ class GaldaxiaScene: SKScene {
 
     let scoreboard = SKLabelNode(text: "")
     let dax = SKSpriteNode(imageNamed: "Logo")
-    let closeButton = TappableShapeNode(rectOf: CGSize(width: 80, height: 32), cornerRadius: 8)
+    let touchZone = TappableShapeNode(rect: CGRect(x: 0, y: 0, width: C.width, height: C.daxSize + (C.daxSize / 2)))
 
     var movePhase: MovePhase = .leftDown {
         didSet {
@@ -90,19 +91,12 @@ class GaldaxiaScene: SKScene {
 
         addScoreboard()
         addCloseButton()
-        addDax()
         addTouchZone()
         addBoundary()
 
-        run(.sequence([
-            .wait(forDuration: 3.0),
-            .run {
-                self.addEnemies()
-            }
-        ]))
-
         physicsWorld.contactDelegate = self
 
+        newGame(delay: 3)
     }
 
     private func addBoundary() {
@@ -125,11 +119,15 @@ class GaldaxiaScene: SKScene {
         enemy.physicsBody?.isDynamic = true
         enemy.physicsBody?.affectedByGravity = false
         enemy.physicsBody?.categoryBitMask = C.collisionEnemyCategory
-        enemy.physicsBody?.contactTestBitMask = C.collisionBulletCategory | C.collisionWallCategory
+        enemy.physicsBody?.contactTestBitMask =
+            C.collisionBulletCategory | C.collisionWallCategory | C.collisionDaxCategory
         enemy.physicsBody?.collisionBitMask = 0x0
         enemy.physicsBody?.usesPreciseCollisionDetection = true
 
         addChild(enemy)
+
+        enemy.alpha = 0.0
+        enemy.run(.fadeIn(withDuration: 0.3))
     }
 
     private func changeEnemyMovement() {
@@ -155,7 +153,15 @@ class GaldaxiaScene: SKScene {
 
     private func moveEnemiesDown() {
         enumerateChildNodes(withName: C.enemyName) { node, stop in
-            node.run(.moveBy(x: 0, y: -20, duration: 0.3))
+            node.run(.sequence([
+                .moveBy(x: 0, y: -24, duration: 0.3),
+                .run {
+                    if node.position.y < 0 {
+                        node.removeFromParent()
+                        self.replenishEnemies()
+                    }
+                }
+            ]))
         }
 
         run(.sequence([
@@ -202,12 +208,18 @@ class GaldaxiaScene: SKScene {
 
     }
 
-    private func addTouchZone() {
-        let rect = CGRect(x: 0, y: 0, width: C.width, height: C.daxSize + (C.daxSize / 2))
-        let touchZone = TappableShapeNode(rect: rect)
-        touchZone.tapped = {
-            self.moveDax(to: $0.location(in: self))
+    private func replenishEnemies() {
+        var remaining = 0
+        enumerateChildNodes(withName: C.enemyName) { node, stop in
+            remaining += 1
         }
+
+        if remaining == 0 {
+            addEnemies()
+        }
+    }
+
+    private func addTouchZone() {
         addChild(touchZone)
     }
 
@@ -226,16 +238,17 @@ class GaldaxiaScene: SKScene {
     }
 
     private func addCloseButton() {
+        let closeButton = TappableShapeNode(rectOf: CGSize(width: 80, height: 32), cornerRadius: 8)
 
-        let label = SKLabelNode(text: "[Exit]")
+        let label = SKLabelNode(text: "Close")
         label.fontName = "Proxima Nova Medium"
-        label.fontSize = 18
+        label.fontSize = 16
         label.fontColor = .white
         label.verticalAlignmentMode = .center
-        label.position = CGPoint(x: closeButton.frame.midX, y: closeButton.frame.midY - 2)
 
         closeButton.fillColor = .cornflowerBlue
         closeButton.addChild(label)
+        label.position.y -= 2
         closeButton.position = CGPoint(x: frame.width - 52, y: self.frame.height - 28)
         closeButton.tapped = { _ in self.onExit?() }
 
@@ -256,7 +269,20 @@ class GaldaxiaScene: SKScene {
     private func addDax() {
         dax.size = CGSize(width: C.daxSize, height: C.daxSize)
         dax.position = CGPoint(x: frame.midX, y: C.daxSize)
-        addChild(dax)
+        dax.zRotation = 0
+        dax.physicsBody = SKPhysicsBody(circleOfRadius: C.daxSize / 2)
+        dax.physicsBody?.isDynamic = true
+        dax.physicsBody?.affectedByGravity = false
+        dax.physicsBody?.categoryBitMask = C.collisionDaxCategory
+        dax.physicsBody?.contactTestBitMask = C.collisionEnemyCategory
+        dax.physicsBody?.collisionBitMask = 0x0
+        dax.physicsBody?.usesPreciseCollisionDetection = true
+        dax.alpha = 0.0
+
+        insertChild(dax, at: 0)
+
+        dax.run(.sequence([ .fadeIn(withDuration: 0.3),
+                            .rotate(toAngle: CGFloat(GLKMathDegreesToRadians(90)), duration: 0.3) ]))
     }
 
     private func updateScore() {
@@ -299,13 +325,17 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
 
         print("***", #function)
 
-        if enemyHitsWall(contact) {
+        if daxCollision(contact) {
+
+            handleDaxCollision(contact)
+
+        } else if boundaryCollision(contact) {
 
             if !enemiesAreMovingDown() {
                 handleBoundaryCollision()
             }
 
-        } else {
+        } else if bulletCollision(contact) {
 
             handleEnemyCollision(contact)
 
@@ -313,16 +343,113 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
 
     }
 
+    private func bulletCollision(_ contact: SKPhysicsContact) -> Bool {
+        let categories = [
+            contact.bodyA.categoryBitMask,
+            contact.bodyB.categoryBitMask
+        ]
+        return categories.contains(C.collisionBulletCategory)
+    }
+
+    private func handleDaxCollision(_ contact: SKPhysicsContact) {
+        print("***", #function)
+
+        touchZone.tapped = nil
+
+        enumerateChildNodes(withName: C.enemyName) { node, stop in
+            node.removeAllActions()
+            node.run(.sequence([.fadeOut(withDuration: 1), .removeFromParent()]))
+        }
+
+        let x = CGFloat.random(in: 0 ... C.width)
+        let y = CGFloat(C.height + 100)
+        let angle = Double.random(in: -360 ... 360)
+        let radians = CGFloat(angle * Double.pi / 180)
+        print("***", #function, x, y, angle, radians)
+
+        dax.physicsBody?.categoryBitMask = 0x0
+        dax.run(.group([
+            .repeatForever(.rotate(byAngle: radians, duration: 1)),
+            .move(to: CGPoint(x: x, y: y), duration: 2)
+        ]))
+
+        showGameOver()
+    }
+
+    private func showGameOver() {
+
+        let label = SKLabelNode(text: "Game Over!")
+        label.fontName = "Proxima Nova Extrabold"
+        label.fontSize = 24
+        label.fontColor = .cornflowerBlue
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: frame.midX, y: frame.midY + 30)
+        label.alpha = 0.0
+        addChild(label)
+        label.run(.fadeIn(withDuration: 1))
+
+        let playAgain = SKLabelNode(text: "Play Again")
+        playAgain.fontName = "Proxima Nova Semibold"
+        playAgain.fontSize = 16
+        playAgain.fontColor = .white
+        playAgain.verticalAlignmentMode = .center
+
+        let button = TappableShapeNode(rectOf: CGSize(width: 100, height: 40), cornerRadius: 8)
+        button.fillColor = .cornflowerBlue
+        button.addChild(playAgain)
+        playAgain.position.y -= 2
+        button.position = CGPoint(x: frame.midX, y: frame.midY - 30)
+        button.tapped = { _ in
+            label.removeFromParent()
+            button.removeFromParent()
+            self.newGame(delay: 1)
+        }
+
+        addChild(button)
+
+    }
+
+    private func newGame(delay: TimeInterval) {
+        score = 0
+
+        dax.removeFromParent()
+        dax.removeAllActions()
+
+        run(.sequence([
+            .wait(forDuration: delay),
+            .run {
+                self.addDax()
+                self.touchZone.tapped = {
+                    self.moveDax(to: $0.location(in: self))
+                }
+            },
+            .wait(forDuration: 0.4),
+            .run {
+                self.addEnemies()
+            }
+        ]))
+
+    }
+
+    private func daxCollision(_ contact: SKPhysicsContact) -> Bool {
+        let categories = [
+            contact.bodyA.categoryBitMask,
+            contact.bodyB.categoryBitMask
+        ]
+        return categories.contains(C.collisionDaxCategory)
+    }
+
     private func enemiesAreMovingDown() -> Bool {
         print("***", #function, movePhase)
         return movePhase == .leftDown || movePhase == .rightDown
     }
 
-    private func enemyHitsWall(_ contact: SKPhysicsContact) -> Bool {
-        return (contact.bodyA.categoryBitMask == C.collisionWallCategory
-                || contact.bodyB.categoryBitMask == C.collisionWallCategory)
-            && (contact.bodyA.node?.name == C.enemyName
-                || contact.bodyB.node?.name == C.enemyName)
+    private func boundaryCollision(_ contact: SKPhysicsContact) -> Bool {
+        let categories = [
+            contact.bodyA.categoryBitMask,
+            contact.bodyB.categoryBitMask
+        ]
+        return categories.contains(C.collisionWallCategory)
     }
 
     private func handleBoundaryCollision() {
@@ -349,15 +476,7 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
             emitter.run(.sequence([.wait(forDuration: 1.5), .removeFromParent()]))
             addChild(emitter)
 
-            var remaining = 0
-            enumerateChildNodes(withName: C.enemyName) { node, stop in
-                remaining += 1
-            }
-
-            if remaining == 0 {
-                addEnemies()
-            }
-
+            replenishEnemies()
         }
 
     }
