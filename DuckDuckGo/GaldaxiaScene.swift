@@ -10,12 +10,12 @@ import SpriteKit
 
 class GaldaxiaScene: SKScene {
 
-    enum MovePhase: String {
+    enum MovePhase {
 
         case right
-        case rightDown
+        case downRight(remaining: CGFloat)
         case left
-        case leftDown
+        case downLeft(remaining: CGFloat)
 
     }
 
@@ -24,14 +24,18 @@ class GaldaxiaScene: SKScene {
         static let collisionEnemyCategory: UInt32 = 0x1 << 1
         static let collisionWallCategory: UInt32 = 0x1 << 2
         static let collisionDaxCategory: UInt32 = 0x1 << 3
+        static let collisionBombCategory: UInt32 = 0x1 << 4
+
+        static let enemyName = "enemy"
+        static let bombName = "bomb"
 
         static let daxSize: CGFloat = 50
-        static let enemyName = "enemy"
         static let width: CGFloat = 320
         static let height: CGFloat = 568
-        static let rightMovement = CGVector(dx: 50, dy: 0)
-        static let leftMovement = CGVector(dx: -50, dy: 0)
-        static let noMovement = CGVector(dx: 0, dy: 0)
+        static let downDistance: CGFloat = 25
+
+        static let minMovementSpeed: CGFloat = 25
+        static let maxMovementSpeed: CGFloat = 100
     }
 
     static func create(onExit: @escaping () -> Void) -> SKScene {
@@ -47,32 +51,10 @@ class GaldaxiaScene: SKScene {
     let dax = SKSpriteNode(imageNamed: "Logo")
     let touchZone = TappableShapeNode(rect: CGRect(x: 0, y: 0, width: C.width, height: C.daxSize + (C.daxSize / 2)))
 
-    var movePhase: MovePhase = .leftDown {
-        didSet {
-            switch movePhase {
+    var movePhase: MovePhase = .right
+    var lastUpdate: TimeInterval = 0.0
 
-            case .left:
-                movement = C.leftMovement
-
-            case .leftDown, .rightDown:
-                movement = C.noMovement
-                moveEnemiesDown()
-
-            case .right:
-                movement = C.rightMovement
-
-            }
-        }
-    }
-
-    var movement = C.noMovement {
-        didSet {
-            print("***", #function, movement)
-            enumerateChildNodes(withName: C.enemyName) { node, stop in
-                node.physicsBody?.velocity = self.movement
-            }
-        }
-    }
+    var level: CGFloat = 1
 
     var score: Int = 0 {
         didSet {
@@ -99,6 +81,96 @@ class GaldaxiaScene: SKScene {
         newGame(delay: 1)
     }
 
+    override func update(_ currentTime: TimeInterval) {
+        super.update(currentTime)
+
+        var bomb = shouldDropBomb()
+
+        let diff = CGFloat(currentTime - lastUpdate)
+        let speed = min(C.minMovementSpeed + level, C.maxMovementSpeed)
+        let distance = min(speed * diff, speed)
+
+        switch movePhase {
+        case .downLeft(let remaining):
+            if remaining > 0 {
+                movePhase = .downLeft(remaining: remaining - distance)
+            } else {
+                movePhase = .right
+            }
+
+        case .downRight(let remaining):
+            if remaining > 0 {
+                movePhase = .downRight(remaining: remaining - distance)
+            } else {
+                movePhase = .left
+            }
+
+        default: break
+        }
+
+        enumerateChildNodes(withName: C.enemyName) { node, _ in
+
+            if bomb && Int.random(in: 0..<20) == 0 {
+                bomb = false
+                self.dropBomb(from: node)
+            }
+
+            switch self.movePhase {
+            case .right:
+                node.position.x += distance
+
+            case .left:
+                node.position.x -= distance
+
+            case .downLeft, .downRight:
+                node.position.y -= distance
+
+            }
+        }
+
+        lastUpdate = currentTime
+    }
+
+    private func dropBomb(from node: SKNode) {
+
+        guard node.alpha == 1 else { return }
+
+        let circle = SKShapeNode(circleOfRadius: 15)
+        circle.fillColor = .red
+        circle.name = C.bombName
+        circle.position = node.position
+
+        circle.physicsBody = SKPhysicsBody(circleOfRadius: 15)
+        circle.physicsBody?.isDynamic = true
+        circle.physicsBody?.categoryBitMask = C.collisionBombCategory
+        circle.physicsBody?.contactTestBitMask = C.collisionDaxCategory
+        circle.physicsBody?.collisionBitMask = 0x0
+        circle.physicsBody?.usesPreciseCollisionDetection = true
+
+        let angle = Double.random(in: -360 ... 360)
+        let radians = CGFloat(angle * Double.pi / 180)
+
+        circle.run(.group([
+            .repeatForever(.rotate(byAngle: radians, duration: 1)),
+            .sequence([ .moveTo(y: -100, duration: 3), .removeFromParent() ])
+        ]))
+
+        let cookie = SKLabelNode(text: "🍪")
+        circle.addChild(cookie)
+        cookie.position.y -= 12
+
+        addChild(circle)
+    }
+
+    private func shouldDropBomb() -> Bool {
+        var bombs: CGFloat = 0.0
+        enumerateChildNodes(withName: C.bombName) { _, stop in
+            stop.initialize(to: true)
+            bombs += 1
+        }
+        return bombs < level
+    }
+
     private func addBoundary() {
         physicsBody = SKPhysicsBody(edgeLoopFrom: CGRect(x: 0, y: 0, width: C.width, height: C.height))
         physicsBody?.isDynamic = true
@@ -113,7 +185,6 @@ class GaldaxiaScene: SKScene {
 
         let enemy = SKSpriteNode(imageNamed: named)
         enemy.position = point
-        enemy.run(.fadeIn(withDuration: 0.3))
         enemy.name = C.enemyName
         enemy.physicsBody = SKPhysicsBody(circleOfRadius: enemy.size.width / 2)
         enemy.physicsBody?.isDynamic = true
@@ -135,41 +206,20 @@ class GaldaxiaScene: SKScene {
 
         switch movePhase {
 
-        case .rightDown:
+        case .downLeft:
+            movePhase = .right
+
+        case .downRight:
             movePhase = .left
 
         case .left:
-            movePhase = .leftDown
-
-        case .leftDown:
-            movePhase = .right
+            movePhase = .downLeft(remaining: C.downDistance)
 
         case .right:
-            movePhase = .rightDown
+            movePhase = .downRight(remaining: C.downDistance)
 
         }
 
-    }
-
-    private func moveEnemiesDown() {
-        enumerateChildNodes(withName: C.enemyName) { node, stop in
-            node.run(.sequence([
-                .moveBy(x: 0, y: -24, duration: 0.3),
-                .run {
-                    if node.position.y < 0 {
-                        node.removeFromParent()
-                        self.replenishEnemies()
-                    }
-                }
-            ]))
-        }
-
-        run(.sequence([
-            .wait(forDuration: 0.3),
-            .run {
-                self.changeEnemyMovement()
-            }
-        ]))
     }
 
     private func addEnemies() {
@@ -216,8 +266,27 @@ class GaldaxiaScene: SKScene {
 
         if remaining == 0 {
             addEnemies()
-            // TODO bump difficulty
+            level += 1
+            showLevel()
         }
+    }
+
+    private func showLevel() {
+
+        let label = SKLabelNode(text: "Level \(Int(level))")
+        label.fontName = "Proxima Nova Extrabold"
+        label.fontSize = 24
+        label.fontColor = .cornflowerBlue
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: frame.midX, y: frame.midY + 30)
+        label.alpha = 0.0
+        addChild(label)
+        label.run(.sequence([
+            .fadeIn(withDuration: 1),
+            .wait(forDuration: 0.3),
+            .fadeOut(withDuration: 1),
+            .removeFromParent()
+        ]))
     }
 
     private func addTouchZone() {
@@ -414,6 +483,7 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
 
     private func newGame(delay: TimeInterval) {
         score = 0
+        level = 1
 
         dax.removeFromParent()
         dax.removeAllActions()
@@ -444,7 +514,10 @@ extension GaldaxiaScene: SKPhysicsContactDelegate {
 
     private func enemiesAreMovingDown() -> Bool {
         print("***", #function, movePhase)
-        return movePhase == .leftDown || movePhase == .rightDown
+        switch movePhase {
+        case .downLeft, .downRight: return true
+        default: return false
+        }
     }
 
     private func boundaryCollision(_ contact: SKPhysicsContact) -> Bool {
