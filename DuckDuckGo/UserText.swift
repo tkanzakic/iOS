@@ -277,7 +277,9 @@ public struct UserText {
     
     public static let daxDialogHomeInitial = NSLocalizedString("dax.onboarding.home.initial", value: "Next, try visiting one of your favorite sites!\n\nI’ll block trackers so they can’t spy on you. I’ll also upgrade the security of your connection if possible. 🔒", comment: "")
     public static let daxDialogHomeSubsequent = NSLocalizedString("dax.onboarding.home.subsequent", value: "You’ve got this!\n\nRemember: every time you browse with me a creepy ad loses its wings. 👍", comment: "ad = advertisment")
-    
+    public static let daxDialogHomeAddFavorite = NSLocalizedString("dax.onboarding.home.add.favorite", value: "Visit your favorite sites in a flash!\n\nGo to a site you love. Then tap the \"⋯\" icon and select *Add to Favorites*.", comment: "Encourage user to add favorite site using the browsing menu.")
+    public static let daxDialogHomeAddFavoriteAccessible = NSLocalizedString("dax.onboarding.home.add.favorite.accessible", value: "Visit your favorite sites in a flash! Visit one of your favorite sites. Then tap the open menu button and select Add to Favorites.", comment: "Accessible version of dax.onboarding.home.add.favorite")
+
     public static let daxDialogBrowsingAfterSearch = NSLocalizedString("dax.onboarding.browsing.after.search", value: "Your DuckDuckGo searches are anonymous and I never store your search history.  Ever. 🙌", comment: "")
     public static let daxDialogBrowsingAfterSearchCTA = NSLocalizedString("dax.onboarding.browsing.after.search.cta", value: "Phew!", comment: "")
     
@@ -309,4 +311,10 @@ public struct UserText {
     public static let defaultBrowserHomeMessageSubheader = NSLocalizedString("home.message.subheader", value: "Open links with peace of mind, every time.", comment: "")
     public static let defaultBrowserHomeMessageTopText = NSLocalizedString("home.message.topText", value: "NEW IN IOS 14", comment: "")
     public static let defaultBrowserHomeMessageButtonText = NSLocalizedString("home.message.buttonText", value: "Set as Default Browser", comment: "")
+    
+    public static let doNotSellInfoText = NSLocalizedString("donotsell.info.headertext", value: "Your data shouldn't be for sale. At DuckDuckGo, we agree. Activate the \"Global Privacy Control\" (GPC) setting and we'll signal to websites your preference to:\n\n• Not sell your personal data.\n• Limit sharing of your personal data to other companies.",
+                        comment: "")
+    public static let doNotSellDisclaimerBold = NSLocalizedString("donotsell.disclaimer.footertext", value: "Since Global Privacy Control (GPC) is a new standard, most websites won't recognize it yet, but we're working hard to ensure it becomes accepted worldwide.", comment: "")
+    public static let doNotSellDisclaimerSuffix = NSLocalizedString("donotsell.disclaimer.suffix", value: " However, websites are only required to act on the signal to the extent applicable laws compel them to do so. ", comment: "")
+    public static let doNotSellLearnMore = NSLocalizedString("donotsell.disclaimer.learnmore", value: "Learn More", comment: "")
 }
