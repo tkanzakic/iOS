@@ -168,7 +168,7 @@ class GaldaxiaScene: SKScene {
             stop.initialize(to: true)
             bombs += 1
         }
-        return bombs < level
+        return bombs + 1 < min(level, 4)
     }
 
     private func addBoundary() {
@@ -311,14 +311,14 @@ class GaldaxiaScene: SKScene {
         let closeButton = TappableShapeNode(rectOf: CGSize(width: 80, height: 32), cornerRadius: 8)
 
         let label = SKLabelNode(text: "Close")
-        label.fontName = "Proxima Nova Medium"
+        label.fontName = "Proxima Nova Semibold"
         label.fontSize = 16
         label.fontColor = .white
         label.verticalAlignmentMode = .center
 
         closeButton.fillColor = .cornflowerBlue
         closeButton.addChild(label)
-        label.position.y -= 2
+        label.position.y -= 1
         closeButton.position = CGPoint(x: frame.width - 52, y: self.frame.height - 28)
         closeButton.tapped = { _ in self.onExit?() }
 
