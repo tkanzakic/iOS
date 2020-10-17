@@ -26,6 +26,8 @@ class GameViewController: UIViewController {
         return UIDevice.current.userInterfaceIdiom == .pad ? .all : [ .portrait, .portraitUpsideDown]
     }
 
+    override var prefersStatusBarHidden: Bool { return true }
+
     static func launch(over presentingViewController: UIViewController) {
         let controller = GameViewController()
         controller.modalPresentationStyle = .fullScreen

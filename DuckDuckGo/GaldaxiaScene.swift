@@ -118,7 +118,7 @@ extension Galdaxia {
 
             enumerateChildNodes(withName: Const.enemyName) { node, _ in
 
-                if bomb && Int.random(in: 0..<self.children.count) == 0 {
+                if bomb && Int.random(in: 0..<1000) == 0 {
                     bomb = false
                     self.dropBomb(from: node)
                 }
@@ -147,11 +147,10 @@ extension Galdaxia {
 
         private func shouldDropBomb() -> Bool {
             var bombs: CGFloat = 0.0
-            enumerateChildNodes(withName: Const.bombName) { _, stop in
-                stop.initialize(to: true)
+            enumerateChildNodes(withName: Const.bombName) { _, _ in
                 bombs += 1
             }
-            return bombs + 1 < min(level, 4)
+            return bombs + 1 < min(level, 3)
         }
 
         private func addBoundary() {
