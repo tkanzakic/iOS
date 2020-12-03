@@ -22,10 +22,26 @@ import XCTest
 
 class FeedWatcherTests: XCTestCase {
 
-    func test() {
+    func testJSONFeed() {
 
         let domain = "daringfireball.net"
         let url = URL(string: "https://daringfireball.net/feeds/json")!
+        FeedWatcher.shared.registerFeed(forDomain: domain, atLocation: url)
+        FeedWatcher.shared.commitFeed(forDomain: domain)
+
+        let ex = expectation(description: "checkFeed")
+        FeedWatcher.shared.checkFeed(forDomain: domain) {
+            XCTAssertTrue($0 ?? 0 > 0)
+            ex.fulfill()
+        }
+
+        wait(for: [ex], timeout: 10)
+    }
+
+    func testAtomFeed() {
+
+        let domain = "daringfireball.net"
+        let url = URL(string: "https://daringfireball.net/feeds/main")!
         FeedWatcher.shared.registerFeed(forDomain: domain, atLocation: url)
         FeedWatcher.shared.commitFeed(forDomain: domain)
 

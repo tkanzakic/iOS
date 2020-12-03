@@ -18,6 +18,7 @@
 //
 
 import Foundation
+import FeedKit
 
 class FeedWatcher {
 
@@ -25,14 +26,14 @@ class FeedWatcher {
 
         let domain: String
         let url: URL
-        let lastId: String?
+        let info: FeedInfo?
 
     }
 
     struct FeedInfo {
 
         let lastId: String
-        let itemCount: Int
+        let count: Int
 
     }
 
@@ -55,7 +56,7 @@ class FeedWatcher {
     func commitFeed(forDomain domain: String) {
         guard let feedURL = temporary[domain] else { return }
         temporary.removeValue(forKey: domain)
-        feeds[domain] = Feed(domain: domain, url: feedURL, lastId: nil)
+        feeds[domain] = Feed(domain: domain, url: feedURL, info: nil)
     }
 
     /// Remove any feed URL for this domain
@@ -72,15 +73,23 @@ class FeedWatcher {
     /// Start checking the feed to see if there's new content
     func checkFeed(forDomain domain: String, completion: @escaping (Int?) -> Void) {
         guard let feed = feeds[domain] else { return }
+
+        func complete(count: Int?) {
+            DispatchQueue.main.async {
+                completion(count)
+            }
+        }
+
         let task = URLSession.shared.dataTask(with: feed.url) { data, _, _ in
             guard let data = data,
-                  let feedInfo = data.parse(lastId: feed.lastId),
-                  feedInfo.lastId != feed.lastId else {
-                completion(nil)
+                  let feedInfo = data.parse(withLastId: feed.info?.lastId),
+                  feedInfo.lastId != feed.info?.lastId else {
+                complete(count: nil)
                 return
             }
 
-            completion(feedInfo.itemCount)
+            self.feeds[domain] = Feed(domain: domain, url: feed.url, info: feedInfo)
+            complete(count: feedInfo.count)
         }
         task.resume()
     }
@@ -89,44 +98,54 @@ class FeedWatcher {
 
 extension Data {
 
-    func parse(lastId: String?) -> FeedWatcher.FeedInfo? {
-
-        if let info = decodeJson(lastId) {
-            return info
+    func parse(withLastId lastId: String?) -> FeedWatcher.FeedInfo? {
+        switch FeedParser(data: self).parse() {
+        case .success(let feed):
+            return process(feed: feed, withId: lastId)
+        default: return nil
         }
-
-//        if let info = decodeAtom(lastId) {
-//            return info
-//        }
-
-        return nil
     }
 
-    private func decodeJson(_ lastId: String?) -> FeedWatcher.FeedInfo? {
+    private func process(feed: Feed, withId lastId: String?) -> FeedWatcher.FeedInfo? {
+        switch feed {
+        case .json(let jsonFeed):
+            return processJSON(feed: jsonFeed, withId: lastId)
 
-        // assume they are in order, newest first
-        // swiftlint:disable nesting
-        struct JSONFeed: Decodable {
-            struct Item: Decodable {
-                let id: String
-            }
-            let items: [Item]
+        case .atom(let atomFeed):
+            return processAtom(feed: atomFeed, withId: lastId)
+
+        case .rss(let rssFeed):
+            return processRSS(feed: rssFeed, withId: lastId)
         }
-        // swiftlint:enable nesting
+    }
 
-        guard let feed = try? JSONDecoder().decode(JSONFeed.self, from: self),
-              let firstId = feed.items.first?.id else { return nil }
+    private func processJSON(feed: JSONFeed, withId lastId: String?) -> FeedWatcher.FeedInfo? {
+        guard let ids = feed.items?.compactMap({ $0.id }) else { return nil }
+        return processIds(ids, withId: lastId)
+    }
+
+    private func processAtom(feed: AtomFeed, withId lastId: String?) -> FeedWatcher.FeedInfo? {
+        guard let ids = feed.entries?.compactMap({ $0.id }) else { return nil }
+        return processIds(ids, withId: lastId)
+    }
+
+    private func processRSS(feed: RSSFeed, withId lastId: String?) -> FeedWatcher.FeedInfo? {
+        guard let ids = feed.items?.compactMap({ $0.guid?.value }) else { return nil }
+        return processIds(ids, withId: lastId)
+    }
+
+    private func processIds(_ ids: [String], withId lastId: String?) -> FeedWatcher.FeedInfo? {
+        guard let id = ids.first else { return nil }
 
         var count = 0
-        while lastId != feed.items[count].id {
+        while lastId != ids[count] {
             count += 1
-
-            if count >= feed.items.count {
-                break   
+            if count >= ids.count {
+                break
             }
         }
 
-        return .init(lastId: firstId, itemCount: count)
+        return .init(lastId: id, count: count)
     }
 
 }
