@@ -160,6 +160,7 @@ class TabViewController: UIViewController {
     private var findInPageScript = FindInPageUserScript()
     private var fullScreenVideoScript = FullScreenVideoUserScript()
     private var debugScript = DebugUserScript()
+    private var feedScript = FeedUserScript()
     
     private var userScripts: [UserScript] = []
 
@@ -229,7 +230,8 @@ class TabViewController: UIViewController {
             contentBlockerScript,
             contentBlockerRulesScript,
             faviconScript,
-            fullScreenVideoScript
+            fullScreenVideoScript,
+            feedScript
         ]
         
         if #available(iOS 13, *) {
