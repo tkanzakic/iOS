@@ -23,10 +23,20 @@
 
   let topLevelUrl = getTopLevelURL();
     
-  let unprotectedDomain = `
+  var unprotectedDomain = false;
+  var domainParts = topLevelUrl && topLevelUrl.host ? topLevelUrl.host.split(".") : [];
+
+  // walk up the domain to see if it's unprotected
+  while (domainParts && domainParts.length > 1 && !unprotectedDomain) {
+    let partialDomain = domainParts.join(".")
+
+    unprotectedDomain = `
         ${unprotectedDomains}
-    `.split("\n").filter(domain => domain.trim() == topLevelUrl.host).length > 0;
+        `.split("\n").filter(domain => domain.trim() == partialDomain).length > 0;
     
+    domainParts.shift()
+  }
+
   // private
   function getTopLevelURL() {
       try {
@@ -92,10 +102,12 @@
 
     function sendMessage(url, resourceType) {
       if (url) {
+        const pageUrl = window.location.href
         webkit.messageHandlers.processRule.postMessage({ 
           url: url,
           resourceType: resourceType === undefined ? null : resourceType,
-          blocked: !unprotectedDomain
+          blocked: !unprotectedDomain,
+          pageUrl: pageUrl
         });
       }
     }
