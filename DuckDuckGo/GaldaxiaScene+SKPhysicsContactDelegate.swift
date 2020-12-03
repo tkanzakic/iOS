@@ -54,8 +54,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     private func handleDaxCollision(_ contact: SKPhysicsContact) {
         print("***", #function)
 
-        touchZone.tapped = nil
-
         enumerateChildNodes(withName: Galdaxia.Const.enemyName) { node, _ in
             node.removeAllActions()
             node.run(.sequence([.fadeOut(withDuration: 1), .removeFromParent()]))
@@ -122,9 +120,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
             .wait(forDuration: delay),
             .run {
                 self.addDax()
-                self.touchZone.tapped = {
-                    self.moveDax(to: $0.location(in: self))
-                }
             },
             .wait(forDuration: 0.4),
             .run {

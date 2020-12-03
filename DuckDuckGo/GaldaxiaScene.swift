@@ -32,6 +32,7 @@ struct Galdaxia {
         static let bombName = "bomb"
 
         static let daxSize: CGFloat = 50
+        static let touchHeight: CGFloat = 75
         static let width: CGFloat = 320
         static let height: CGFloat = 568
         static let downDistance: CGFloat = 25
@@ -57,7 +58,6 @@ extension Galdaxia {
 
         let scoreboard = SKLabelNode(text: "")
         let dax = SKSpriteNode(imageNamed: "Logo")
-        let touchZone = TappableShapeNode(rect: CGRect(x: 0, y: 0, width: Const.width, height: Const.daxSize + (Const.daxSize / 2)))
 
         var movePhase: MovePhase = .right
         var lastUpdate: TimeInterval = 0.0
@@ -81,7 +81,6 @@ extension Galdaxia {
 
             addScoreboard()
             addCloseButton()
-            addTouchZone()
             addBoundary()
 
             physicsWorld.contactDelegate = self
@@ -137,6 +136,14 @@ extension Galdaxia {
             }
 
             lastUpdate = currentTime
+        }
+
+        override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+            super.touchesEnded(touches, with: event)
+            guard let point = touches.first?.location(in: self) else { return }
+            if point.y < Const.touchHeight {
+                moveDax(to: point)
+            }
         }
 
         private func dropBomb(from node: SKNode) {
@@ -253,10 +260,6 @@ extension Galdaxia {
             ]))
         }
 
-        private func addTouchZone() {
-            addChild(touchZone)
-        }
-
         func moveDax(to position: CGPoint) {
             print("***", #function, position)
             let x = position.x
@@ -327,9 +330,9 @@ extension Galdaxia {
             bullet.position.y += 12
             bullet.fillColor = .red
 
-            let rocket = SKLabelNode(text: "🚀")
-            rocket.zRotation = CGFloat(GLKMathDegreesToRadians(45))
-            rocket.position = CGPoint(x: 7, y: -24)
+            let rocket = SKLabelNode(text: "🔥")
+            // rocket.zRotation = CGFloat(GLKMathDegreesToRadians(45))
+            rocket.position = CGPoint(x: 0, y: -24)
             bullet.addChild(rocket)
 
             insertChild(bullet, at: 0)
