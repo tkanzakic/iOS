@@ -23,12 +23,20 @@ class FeedStatusBadge: UIView {
 
     @IBOutlet weak var badge: UIView!
     @IBOutlet weak var label: UILabel!
+    @IBOutlet weak var activity: UIActivityIndicatorView!
 
     func apply(status: FeedWatcher.Status) {
         switch status {
         case .unread(let count):
             isHidden = false
+            activity.isHidden = true
+            label.isHidden = false
             label.text = "\(count)"
+
+        case .checking:
+            isHidden = false
+            activity.isHidden = false
+            label.isHidden = true
 
         default:
             isHidden = true

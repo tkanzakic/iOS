@@ -19,6 +19,7 @@
 
 import Foundation
 import FeedKit
+import Core
 
 class FeedWatcher {
 
@@ -99,7 +100,7 @@ class FeedWatcher {
         return .noFeedRegistered
     }
 
-    /// Start checking the feed to see if there's new content
+    /// Start checking the feed to see if there's new content. Completion calls back on the main thread.
     func checkFeed(forDomain domain: String, completion: @escaping (Int?) -> Void) {
         guard let feed = feeds[domain] else { return }
 
@@ -115,8 +116,13 @@ class FeedWatcher {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: feed.url) { data, _, _ in
-            guard let data = data,
+        var request = URLRequest(url: feed.url)
+        UserAgentManager.shared.update(request: &request, isDesktop: false)
+
+        let task = URLSession.shared.dataTask(with: request) {
+            print($0 as Any, $1 as Any, $2 as Any)
+
+            guard let data = $0,
                   let feedInfo = data.parse(withLastId: feed.info?.lastId),
                   feedInfo.lastId != feed.info?.lastId else {
                 complete(count: nil)

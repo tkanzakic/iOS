@@ -87,6 +87,10 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="JiA-Rk-Wp8">
                                 <rect key="frame" x="48" y="48" width="32" height="32"/>
                                 <subviews>
+                                    <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" animating="YES" style="white" translatesAutoresizingMaskIntoConstraints="NO" id="9IY-2a-vfR">
+                                        <rect key="frame" x="6" y="6" width="20" height="20"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                    </activityIndicatorView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="?" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="i5E-NS-1a9">
                                         <rect key="frame" x="0.0" y="3" width="32" height="30"/>
                                         <fontDescription key="fontDescription" name="ProximaNova-Semibold" family="Proxima Nova" pointSize="17"/>
@@ -127,6 +131,7 @@
                             </userDefinedRuntimeAttribute>
                         </userDefinedRuntimeAttributes>
                         <connections>
+                            <outlet property="activity" destination="9IY-2a-vfR" id="Xkm-Ty-m76"/>
                             <outlet property="badge" destination="JiA-Rk-Wp8" id="iMr-YG-Q6i"/>
                             <outlet property="label" destination="i5E-NS-1a9" id="Ded-n5-rWb"/>
                         </connections>
