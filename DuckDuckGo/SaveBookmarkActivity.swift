@@ -22,7 +22,7 @@ import Core
 
 class SaveBookmarkActivity: UIActivity {
 
-    private lazy var bookmarksManager: BookmarksManager = BookmarksManager()
+    private lazy var bookmarksManager: BookmarksManager = AppBookmarksManager()
     private var bookmark: Link?
     
     private weak var controller: UIViewController?

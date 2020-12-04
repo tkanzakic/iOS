@@ -32,6 +32,7 @@ class FavoriteHomeCell: UICollectionViewCell {
     @IBOutlet weak var iconImage: UIImageView!
     @IBOutlet weak var highlightMask: UIView!
     @IBOutlet weak var iconSize: NSLayoutConstraint!
+    @IBOutlet weak var feedStatusBadge: FeedStatusBadge!
     
     static let appUrls = AppUrls()
     
@@ -104,6 +105,15 @@ class FavoriteHomeCell: UICollectionViewCell {
             let useBorder = Self.appUrls.isDuckDuckGo(domain: link.url.host) || image.size.width < Constants.largeFaviconSize
             self.useImageBorder(useBorder)
             self.applyFavicon(image)
+        }
+
+        feedStatusBadge.apply(status: .noFeedRegistered)
+        if let domain = link.url.host {
+            let fw = FeedWatcher.shared
+            feedStatusBadge.apply(status: fw.status(forDomain: domain))
+            fw.checkFeed(forDomain: domain) { _ in
+                self.feedStatusBadge.apply(status: fw.status(forDomain: domain))
+            }
         }
     }
 

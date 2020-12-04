@@ -29,7 +29,7 @@ extension TabViewController {
             return
         }
 
-        let bookmarksManager = BookmarksManager()
+        let bookmarksManager = AppBookmarksManager()
         guard !bookmarksManager.contains(url: link.url) else {
             view.showBottomToast(UserText.webBookmarkAlreadySaved)
             return

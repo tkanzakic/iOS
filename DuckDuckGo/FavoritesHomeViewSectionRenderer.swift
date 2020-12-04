@@ -39,7 +39,7 @@ class FavoritesHomeViewSectionRenderer: NSObject, HomeViewSectionRenderer {
         
     }
     
-    private lazy var bookmarksManager = BookmarksManager()
+    private lazy var bookmarksManager = AppBookmarksManager()
 
     private weak var controller: (UIViewController & FavoritesHomeViewSectionRendererDelegate)?
     
@@ -249,6 +249,9 @@ class FavoritesHomeViewSectionRenderer: NSObject, HomeViewSectionRenderer {
         guard let link = bookmarksManager.favorite(atIndex: indexPath.row) else { return }
         UISelectionFeedbackGenerator().selectionChanged()
         controller?.favoritesRenderer(self, didSelect: link)
+        if let domain = link.url.host {
+            FeedWatcher.shared.setCaughtUp(forDomain: domain)
+        }
     }
     
     private func addNewFavorite(in collectionView: UICollectionView, at indexPath: IndexPath) {

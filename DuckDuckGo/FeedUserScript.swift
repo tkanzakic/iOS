@@ -30,7 +30,8 @@ class FeedUserScript: NSObject, UserScript {
 
          var selectors = [
             "link[type='application/json']",
-            "link[type='application/atom+xml']"
+            "link[type='application/atom+xml']",
+            "link[type='application/rss+xml']"
         ];
 
         var feeds = [];
@@ -70,6 +71,11 @@ class FeedUserScript: NSObject, UserScript {
 
         print("***", #function, feeds)
         FeedWatcher.shared.registerFeed(forDomain: domain, atLocation: feedUrl)
+
+        if let url = message.webView?.url, AppBookmarksManager().contains(url: url) {
+            FeedWatcher.shared.commitFeed(forDomain: domain)
+            FeedWatcher.shared.checkFeed(forDomain: domain, completion: { _ in })
+        }
     }
 
 }

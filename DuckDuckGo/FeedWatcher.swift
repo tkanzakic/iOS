@@ -22,6 +22,16 @@ import FeedKit
 
 class FeedWatcher {
 
+    enum Status {
+
+        case noFeedRegistered
+        case checking
+        case unread(count: Int)
+        case notChecked
+        case caughtUp
+
+    }
+
     struct Feed {
 
         let domain: String
@@ -39,9 +49,11 @@ class FeedWatcher {
 
     static let shared = FeedWatcher()
 
-    private var temporary = [String: URL]()
-
+    // To be persisted on changes
     private var feeds = [String: Feed]()
+
+    private var temporary = [String: URL]()
+    private var tasks = [String: URLSessionDataTask]()
 
     private init() { }
 
@@ -65,9 +77,26 @@ class FeedWatcher {
         feeds.removeValue(forKey: domain)
     }
 
-    /// Quickly check if there's a feed URL for this domain
-    func hasFeed(forDomain domain: String) -> Bool {
-        return temporary.keys.contains(domain) || feeds.keys.contains(domain)
+    func setCaughtUp(forDomain domain: String) {
+        guard let feed = feeds[domain],
+              let info = feed.info else { return }
+        feeds[domain] = Feed(domain: feed.domain, url: feed.url, info: FeedInfo(lastId: info.lastId, count: 0))
+    }
+
+    func status(forDomain domain: String) -> Status {
+        if tasks.keys.contains(domain) {
+            return .checking
+        }
+
+        if let feed = feeds[domain] {
+            if let info = feed.info {
+                return info.count > 0 ? .unread(count: info.count) : .caughtUp
+            } else {
+                return .notChecked
+            }
+        }
+
+        return .noFeedRegistered
     }
 
     /// Start checking the feed to see if there's new content
@@ -75,9 +104,15 @@ class FeedWatcher {
         guard let feed = feeds[domain] else { return }
 
         func complete(count: Int?) {
+            self.tasks.removeValue(forKey: domain)
             DispatchQueue.main.async {
                 completion(count)
             }
+        }
+
+        guard tasks[domain] == nil else {
+            complete(count: feed.info?.count)
+            return
         }
 
         let task = URLSession.shared.dataTask(with: feed.url) { data, _, _ in
@@ -91,6 +126,8 @@ class FeedWatcher {
             self.feeds[domain] = Feed(domain: domain, url: feed.url, info: feedInfo)
             complete(count: feedInfo.count)
         }
+        
+        tasks[domain] = task
         task.resume()
     }
 
