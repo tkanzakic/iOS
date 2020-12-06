@@ -73,6 +73,8 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
 
     private func showGameOver() {
 
+        gameOver = true
+
         let label = SKLabelNode(text: "Game Over!")
         label.fontName = "Proxima Nova Extrabold"
         label.fontSize = 24
@@ -105,6 +107,7 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     func newGame(delay: TimeInterval) {
+        gameOver = false
         score = 0
         level = 1
 
