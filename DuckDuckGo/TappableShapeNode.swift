@@ -33,7 +33,6 @@ class TappableShapeNode: SKShapeNode {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        print("***", #function)
         guard let touch = touches.first else { return }
         tapped?(touch)
     }

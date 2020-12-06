@@ -75,8 +75,6 @@ extension Galdaxia {
         override func didMove(to view: SKView) {
             super.didMove(to: view)
 
-            print("***", #function, self.frame, self.frame.midX)
-
             view.showsPhysics = true
 
             addScoreboard()
@@ -173,7 +171,6 @@ extension Galdaxia {
         }
 
         func changeEnemyMovement() {
-            print("***", #function)
 
             switch movePhase {
 
@@ -218,8 +215,6 @@ extension Galdaxia {
                     let point = CGPoint(x: (x * 35) + 20, y: (y * 30) + 375)
                     let name = names[y]
 
-                    print("***", #function, y, name)
-
                     addEnemy(atPoint: point, named: name)
 
                 }
@@ -261,7 +256,6 @@ extension Galdaxia {
         }
 
         func moveDax(to position: CGPoint) {
-            print("***", #function, position)
             let x = position.x
 
             let distance = abs(dax.position.x - x)
