@@ -30,20 +30,7 @@ class AboutViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        applyTheme(ThemeManager.shared.currentTheme)
-
-        let gesture = UITapGestureRecognizer(target: self, action: #selector(imageGestureHandler(gesture:)))
-        gesture.numberOfTapsRequired = 7
-        logoImage.addGestureRecognizer(gesture)
-        logoImage.isUserInteractionEnabled = true
-    }
-
-    @objc func imageGestureHandler(gesture: UITapGestureRecognizer) {
-        print("***", #function, gesture)
-        guard let vc = presentingViewController else { return }
-        dismiss(animated: true) {
-            GameViewController.launch(over: vc)
-        }
+        applyTheme(ThemeManager.shared.currentTheme)        
     }
 
     @IBAction func onPrivacyLinkTapped(_ sender: UIButton) {

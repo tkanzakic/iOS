@@ -441,6 +441,11 @@ class MainViewController: UIViewController {
         })
         self.present(controller: alert, fromView: self.toolbar)
     }
+
+    @IBAction func onFireButtonLongPress(gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        GameViewController.launch(over: self)
+    }
     
     func onQuickFirePressed() {
         self.forgetAllWithAnimation {}
