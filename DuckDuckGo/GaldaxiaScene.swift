@@ -39,6 +39,34 @@ struct Galdaxia {
 
         static let minMovementSpeed: CGFloat = 25
         static let maxMovementSpeed: CGFloat = 100
+
+        static let icons = [
+            "PP Network Icon adobe",
+            "PP Network Icon adtech",
+            "PP Network Icon amazon",
+            "PP Network Icon aol",
+            "PP Network Icon appnexus",
+            "PP Network Icon casale media",
+            "PP Network Icon chartbeat",
+            "PP Network Icon comscore",
+            "PP Network Icon criteo",
+            "PP Network Icon facebook",
+            "PP Network Icon fox one stop media",
+            "PP Network Icon google",
+            "PP Network Icon mixpanel",
+            "PP Network Icon moat",
+            "PP Network Icon newrelic",
+            "PP Network Icon nielsen",
+            "PP Network Icon openx",
+            "PP Network Icon outbrain",
+            "PP Network Icon quantcast",
+            "PP Network Icon salesforce",
+            "PP Network Icon taboola",
+            "PP Network Icon twitter",
+            "PP Network Icon yandex",
+            "PP Network Icon yahoo!"
+        ]
+
     }
 
     enum MovePhase {
@@ -63,6 +91,7 @@ extension Galdaxia {
         var lastUpdate: TimeInterval = 0.0
 
         var level: CGFloat = 1
+        var gameOver = false
 
         var score: Int = 0 {
             didSet {
@@ -74,8 +103,6 @@ extension Galdaxia {
 
         override func didMove(to view: SKView) {
             super.didMove(to: view)
-
-            print("***", #function, self.frame, self.frame.midX)
 
             view.showsPhysics = true
 
@@ -173,7 +200,6 @@ extension Galdaxia {
         }
 
         func changeEnemyMovement() {
-            print("***", #function)
 
             switch movePhase {
 
@@ -195,21 +221,7 @@ extension Galdaxia {
 
         func addEnemies() {
 
-            let names = [
-                "PP Network Icon facebook",
-                "PP Network Icon twitter",
-                "PP Network Icon amazon",
-                "PP Network Icon outbrain",
-                "PP Network Icon adtech",
-                "PP Network Icon adobe",
-                "PP Network Icon google",
-                "PP Network Icon appnexus",
-                "PP Network Icon comscore",
-                "PP Network Icon aol",
-                "PP Network Icon newrelic",
-                "PP Network Icon nielsen",
-                "PP Network Icon yandex"
-            ].shuffled()
+            let names = Const.icons.shuffled()
 
             for x in 0 ..< 8 {
 
@@ -217,8 +229,6 @@ extension Galdaxia {
 
                     let point = CGPoint(x: (x * 35) + 20, y: (y * 30) + 375)
                     let name = names[y]
-
-                    print("***", #function, y, name)
 
                     addEnemy(atPoint: point, named: name)
 
@@ -261,7 +271,8 @@ extension Galdaxia {
         }
 
         func moveDax(to position: CGPoint) {
-            print("***", #function, position)
+            guard !gameOver else { return }
+            
             let x = position.x
 
             let distance = abs(dax.position.x - x)
@@ -331,7 +342,6 @@ extension Galdaxia {
             bullet.fillColor = .red
 
             let rocket = SKLabelNode(text: "🔥")
-            // rocket.zRotation = CGFloat(GLKMathDegreesToRadians(45))
             rocket.position = CGPoint(x: 0, y: -24)
             bullet.addChild(rocket)
 

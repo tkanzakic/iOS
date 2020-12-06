@@ -95,7 +95,12 @@ class TabSwitcherViewController: UIViewController {
         topDoneButton.isHidden = !AppWidthObserver.shared.isLargeWidth
         topPlusButton.isHidden = !AppWidthObserver.shared.isLargeWidth
     }
-    
+
+    @IBAction func onFireButtonLongPress(gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        GameViewController.launch(over: self)
+    }
+
     private func setupBackgroundView() {
         let view = UIView(frame: collectionView.frame)
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap(gesture:))))

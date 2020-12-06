@@ -23,8 +23,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
 
     func didBegin(_ contact: SKPhysicsContact) {
 
-        print("***", #function)
-
         if daxCollision(contact) {
 
             handleDaxCollision(contact)
@@ -52,8 +50,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     private func handleDaxCollision(_ contact: SKPhysicsContact) {
-        print("***", #function)
-
         enumerateChildNodes(withName: Galdaxia.Const.enemyName) { node, _ in
             node.removeAllActions()
             node.run(.sequence([.fadeOut(withDuration: 1), .removeFromParent()]))
@@ -63,7 +59,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
         let y = CGFloat(Galdaxia.Const.height + 100)
         let angle = Double.random(in: -360 ... 360)
         let radians = CGFloat(angle * Double.pi / 180)
-        print("***", #function, x, y, angle, radians)
 
         dax.physicsBody?.categoryBitMask = 0x0
         dax.run(.group([
@@ -77,6 +72,8 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     private func showGameOver() {
+
+        gameOver = true
 
         let label = SKLabelNode(text: "Game Over!")
         label.fontName = "Proxima Nova Extrabold"
@@ -110,6 +107,7 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     func newGame(delay: TimeInterval) {
+        gameOver = false
         score = 0
         level = 1
 
@@ -138,7 +136,6 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     private func enemiesAreMovingDown() -> Bool {
-        print("***", #function, movePhase)
         switch movePhase {
         case .downLeft, .downRight: return true
         default: return false
@@ -154,15 +151,10 @@ extension Galdaxia.Scene: SKPhysicsContactDelegate {
     }
 
     private func handleBoundaryCollision() {
-        print("***", #function)
-
         changeEnemyMovement()
-
     }
 
     private func handleEnemyCollision(_ contact: SKPhysicsContact) {
-        print("***", #function)
-
         let explosionPosition = contact.bodyA.categoryBitMask == Galdaxia.Const.collisionEnemyCategory ?
                 contact.bodyA.node?.position : contact.bodyB.node?.position
 

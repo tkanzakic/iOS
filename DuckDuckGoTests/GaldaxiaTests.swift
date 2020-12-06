@@ -1,5 +1,5 @@
 //
-//  TappableShapeNode.swift
+//  GaldaxiaTests.swift
 //  DuckDuckGo
 //
 //  Copyright © 2020 DuckDuckGo. All rights reserved.
@@ -17,24 +17,15 @@
 //  limitations under the License.
 //
 
-import SpriteKit
+import XCTest
+@testable import DuckDuckGo
 
-class TappableShapeNode: SKShapeNode {
+class GaldaxiaTests: XCTestCase {
 
-    var tapped: ((UITouch) -> Void)?
-
-    override init() {
-        super.init()
-        isUserInteractionEnabled = true
-    }
-
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        tapped?(touch)
+    func test() {
+        Galdaxia.Const.icons.forEach {
+            XCTAssertNotNil(UIImage(named: $0))
+        }
     }
 
 }

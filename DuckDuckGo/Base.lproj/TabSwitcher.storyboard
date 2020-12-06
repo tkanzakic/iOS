@@ -300,6 +300,7 @@
                             </collectionView>
                             <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translucent="NO" translatesAutoresizingMaskIntoConstraints="NO" id="PrD-ff-flI">
                                 <rect key="frame" x="0.0" y="623" width="375" height="44"/>
+                                <gestureRecognizers/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="44" id="BUt-3S-Yua"/>
                                 </constraints>
@@ -314,6 +315,7 @@
                                         <inset key="imageInsets" minX="5" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         <connections>
                                             <action selector="onFirePressedWithSender:" destination="G9p-Sf-e96" id="N2s-jE-SXY"/>
+                                            <outletCollection property="gestureRecognizers" destination="uwt-05-4Nl" id="eiY-rh-oSI"/>
                                         </connections>
                                     </barButtonItem>
                                     <barButtonItem style="plain" systemItem="flexibleSpace" id="MHa-87-9H2"/>
@@ -419,6 +421,11 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ZnY-zc-eeZ" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <pongPressGestureRecognizer allowableMovement="10" minimumPressDuration="21" id="uwt-05-4Nl" userLabel="Launch Game Long Press">
+                    <connections>
+                        <action selector="onFireButtonLongPressWithGesture:" destination="G9p-Sf-e96" id="PGJ-mN-5V0"/>
+                    </connections>
+                </pongPressGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="1162.4000000000001" y="-7.6461769115442282"/>
         </scene>
